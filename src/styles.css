@@ -1,0 +1,278 @@
+/* #############################################################################
+   # react-piqua-color — self-contained stylesheet
+   #
+   # All theme colors are CSS custom properties, defaulting to a light theme.
+   # Override any of the --pqc-* vars on a wrapping element (or :root) to
+   # re-theme. Genuinely dynamic values (SV/hue gradients, thumb positions,
+   # channel gradients) are supplied as inline styles by the component and are
+   # intentionally NOT expressed here.
+   ############################################################################# */
+
+:where(.pqc-root) {
+   /* ============ */
+   /*  Theme vars  */
+   /* ============ */
+   --pqc-surface: #ffffff; /* raised surface — active mode tab */
+   --pqc-bg: #f1f2f4;      /* recessed background — tab strip, hex field */
+   --pqc-text: #1a1d21;    /* primary text */
+   --pqc-muted: #6b7280;   /* secondary / muted text */
+   --pqc-border: #d4d7dd;  /* hairline borders */
+   --pqc-accent: #f97316;  /* accent (fallback swatch color) */
+
+   /* Non-color tokens */
+   --pqc-radius: 0.5rem;
+   --pqc-radius-sm: 0.375rem;
+   --pqc-thumb-ring: #ffffff; /* circular thumb border */
+   --pqc-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+   display: flex;
+   flex-direction: column;
+   gap: 0.625rem;
+   user-select: none;
+   -webkit-user-select: none;
+}
+
+.pqc-root *,
+.pqc-root *::before,
+.pqc-root *::after {
+   box-sizing: border-box;
+}
+
+/* ============ */
+/*  SV square   */
+/* ============ */
+.pqc-sv {
+   position: relative;
+   width: 100%;
+   height: 120px;
+   border-radius: var(--pqc-radius-sm);
+   overflow: hidden;
+   cursor: crosshair;
+   touch-action: none;
+}
+
+.pqc-sv-thumb {
+   position: absolute;
+   width: 0.875rem;
+   height: 0.875rem;
+   transform: translate(-50%, -50%);
+   border-radius: 9999px;
+   border: 2px solid var(--pqc-thumb-ring);
+   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+   pointer-events: none;
+}
+
+/* ============ */
+/*  Hue bar     */
+/* ============ */
+.pqc-hue {
+   position: relative;
+   width: 100%;
+   height: 0.75rem;
+   border-radius: 9999px;
+   cursor: pointer;
+   touch-action: none;
+}
+
+.pqc-hue-thumb {
+   position: absolute;
+   top: 50%;
+   width: 1rem;
+   height: 1rem;
+   transform: translate(-50%, -50%);
+   border-radius: 9999px;
+   border: 2px solid var(--pqc-thumb-ring);
+   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+   pointer-events: none;
+}
+
+/* ============ */
+/*  Mode tabs   */
+/* ============ */
+.pqc-tabs {
+   display: flex;
+   gap: 0.125rem;
+   padding: 0.125rem;
+   background: var(--pqc-bg);
+   border: 1px solid var(--pqc-border);
+   border-radius: var(--pqc-radius);
+}
+
+.pqc-tab {
+   flex: 1 1 0%;
+   padding: 0.25rem 0;
+   border: none;
+   background: transparent;
+   border-radius: var(--pqc-radius-sm);
+   color: var(--pqc-muted);
+   font-family: var(--pqc-font-mono);
+   font-size: 0.75rem;
+   line-height: 1rem;
+   font-weight: 600;
+   text-transform: uppercase;
+   letter-spacing: 0.025em;
+   cursor: pointer;
+   transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.pqc-tab:hover {
+   color: var(--pqc-text);
+}
+
+.pqc-tab--active {
+   background: var(--pqc-surface);
+   color: var(--pqc-text);
+   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* ============== */
+/*  Mode content  */
+/* ============== */
+.pqc-mode {
+   display: flex;
+   flex-direction: column;
+   gap: 0.5rem;
+}
+
+/* ============ */
+/*  Hex row     */
+/* ============ */
+.pqc-hex-row {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+}
+
+.pqc-hex-swatch {
+   width: 1.75rem;
+   height: 1.75rem;
+   flex-shrink: 0;
+   border-radius: var(--pqc-radius-sm);
+   border: 1px solid var(--pqc-border);
+}
+
+.pqc-hex-field {
+   display: flex;
+   align-items: center;
+   flex: 1 1 0%;
+   gap: 0.25rem;
+   padding: 0.375rem 0.625rem;
+   background: var(--pqc-bg);
+   border: 1px solid var(--pqc-border);
+   border-radius: var(--pqc-radius);
+}
+
+.pqc-hex-hash {
+   font-family: var(--pqc-font-mono);
+   font-size: 0.75rem;
+   color: var(--pqc-muted);
+}
+
+.pqc-hex-input {
+   flex: 1 1 0%;
+   min-width: 0;
+   background: transparent;
+   border: none;
+   outline: none;
+   font-family: var(--pqc-font-mono);
+   font-size: 0.75rem;
+   color: var(--pqc-text);
+}
+
+/* ============== */
+/*  Channel rows  */
+/* ============== */
+.pqc-channel-row {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+}
+
+.pqc-channel-label {
+   width: 1rem;
+   text-align: center;
+   font-family: var(--pqc-font-mono);
+   font-size: 0.75rem;
+   font-weight: 700;
+   user-select: none;
+}
+
+.pqc-channel-input {
+   width: 2.25rem;
+   text-align: right;
+   background: transparent;
+   border: none;
+   outline: none;
+   font-family: var(--pqc-font-mono);
+   font-size: 0.75rem;
+   color: var(--pqc-text);
+}
+
+/* ============== */
+/*  Slider track  */
+/* ============== */
+.pqc-slider {
+   position: relative;
+   flex: 1 1 0%;
+   height: 0.5rem;
+   border-radius: 9999px;
+   cursor: pointer;
+   touch-action: none;
+}
+
+.pqc-slider-thumb {
+   position: absolute;
+   top: 50%;
+   width: 0.875rem;
+   height: 0.875rem;
+   transform: translate(-50%, -50%);
+   border-radius: 9999px;
+   border: 2px solid var(--pqc-thumb-ring);
+   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+   pointer-events: none;
+}
+
+/* =================== */
+/*  Swatch / recent rows  */
+/* =================== */
+.pqc-swatches {
+   display: flex;
+   flex-direction: column;
+   gap: 0.375rem;
+}
+
+.pqc-swatches-label {
+   font-family: var(--pqc-font-mono);
+   font-size: 0.6875rem;
+   line-height: 1rem;
+   font-weight: 600;
+   text-transform: uppercase;
+   letter-spacing: 0.025em;
+   color: var(--pqc-muted);
+}
+
+.pqc-swatch-grid {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 0.25rem;
+}
+
+.pqc-swatch {
+   width: 1.25rem;
+   height: 1.25rem;
+   padding: 0;
+   flex-shrink: 0;
+   border-radius: var(--pqc-radius-sm);
+   border: 1px solid var(--pqc-border);
+   cursor: pointer;
+   transition: transform 0.1s ease;
+}
+
+.pqc-swatch:hover {
+   transform: scale(1.12);
+}
+
+.pqc-swatch:focus-visible {
+   outline: 2px solid var(--pqc-accent);
+   outline-offset: 1px;
+}

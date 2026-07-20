@@ -1,0 +1,53 @@
+{
+  "name": "react-piqua-color",
+  "version": "0.1.0",
+  "description": "A portable, fully controlled React color picker: SV square, hue bar, and hex/rgb/hsl/cmyk sliders. Self-contained styling via CSS custom properties, no CSS framework required.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Florian Douay",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "react",
+    "color",
+    "color-picker",
+    "hex",
+    "rgb",
+    "hsl",
+    "cmyk",
+    "hue",
+    "controlled"
+  ],
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}

@@ -110,12 +110,24 @@ export function ColorPicker({
 
    const pureHue = rgbToHex(...hsvToRgb(stickyHsvHue.current, 100, 100))
 
-   const emit = useCallback((newRgb: [number, number, number]) => {
+   // How much of the sticky-ref set to refresh from a freshly emitted color:
+   //  'all'  — hex / RGB entry: the color jumped wholesale, resync everything.
+   //  'hue'  — HSL / CMYK sliders: their own channel refs stay authoritative
+   //           (round-tripping them would drift the drag), but the always-visible
+   //           SV square + hue bar still follow the new hue.
+   //  'none' — SV square / hue bar: they own the HSV hue, so resyncing it from
+   //           the color they just produced would round-trip and drift it.
+   const emit = useCallback((newRgb: [number, number, number], resync: 'all' | 'hue' | 'none' = 'none') => {
       const hex = rgbToHex(...newRgb)
       emittedHex.current = hex
       setRgb(newRgb)
+      if (resync === 'all') updateStickyRefs(newRgb)
+      else if (resync === 'hue') {
+         const [hue, saturation, value] = rgbToHsv(...newRgb)
+         if (saturation > 0 && value > 0) stickyHsvHue.current = hue
+      }
       onChange(hex)
-   }, [onChange])
+   }, [onChange, updateStickyRefs])
 
    // Discrete commit of the last-emitted color.
    const commit = useCallback(() => {
@@ -324,7 +336,7 @@ export function ColorPicker({
                            if (cleaned.length === 6) {
                               const parsed = hexToRgb('#' + cleaned)
                               if (parsed) {
-                                 emit(parsed)
+                                 emit(parsed, 'all')
                                  // emit() -> onChange() may synchronously re-render and move DOM
                                  // focus elsewhere (a controlled parent can steal it). Reclaim
                                  // focus so the user can keep typing uninterrupted.
@@ -346,13 +358,13 @@ export function ColorPicker({
                <>
                   <ChannelRow label="R" ariaLabel="Red" labelColor="#e55" value={red} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(0,${green},${blue}), rgb(255,${green},${blue}))`}
-                     onChange={channelValue => emit([channelValue, green, blue])} />
+                     onChange={channelValue => emit([channelValue, green, blue], 'all')} />
                   <ChannelRow label="G" ariaLabel="Green" labelColor="#5a5" value={green} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(${red},0,${blue}), rgb(${red},255,${blue}))`}
-                     onChange={channelValue => emit([red, channelValue, blue])} />
+                     onChange={channelValue => emit([red, channelValue, blue], 'all')} />
                   <ChannelRow label="B" ariaLabel="Blue" labelColor="#59f" value={blue} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(${red},${green},0), rgb(${red},${green},255))`}
-                     onChange={channelValue => emit([red, green, channelValue])} />
+                     onChange={channelValue => emit([red, green, channelValue], 'all')} />
                </>
             )}
 
@@ -360,13 +372,13 @@ export function ColorPicker({
                <>
                   <ChannelRow label="H" ariaLabel="Hue" labelColor="#aaa" value={stickyHslHue.current} min={0} max={360} onCommit={commit}
                      gradient="linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)"
-                     onChange={channelValue => { stickyHslHue.current = channelValue; emit(hslToRgb(channelValue, stickyHslSaturation.current, hslLightness)) }} />
+                     onChange={channelValue => { stickyHslHue.current = channelValue; emit(hslToRgb(channelValue, stickyHslSaturation.current, hslLightness), 'hue') }} />
                   <ChannelRow label="S" ariaLabel="Saturation" labelColor="#aaa" value={stickyHslSaturation.current} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, hsl(${stickyHslHue.current},0%,${hslLightness}%), hsl(${stickyHslHue.current},100%,${hslLightness}%))`}
-                     onChange={channelValue => { stickyHslSaturation.current = channelValue; emit(hslToRgb(stickyHslHue.current, channelValue, hslLightness)) }} />
+                     onChange={channelValue => { stickyHslSaturation.current = channelValue; emit(hslToRgb(stickyHslHue.current, channelValue, hslLightness), 'hue') }} />
                   <ChannelRow label="L" ariaLabel="Lightness" labelColor="#aaa" value={hslLightness} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,0%), hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,50%), hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,100%))`}
-                     onChange={channelValue => emit(hslToRgb(stickyHslHue.current, stickyHslSaturation.current, channelValue))} />
+                     onChange={channelValue => emit(hslToRgb(stickyHslHue.current, stickyHslSaturation.current, channelValue), 'hue')} />
                </>
             )}
 
@@ -374,16 +386,16 @@ export function ColorPicker({
                <>
                   <ChannelRow label="C" ariaLabel="Cyan" labelColor="#22c8d8" value={cyan} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(0,stickyCmykMagenta.current,stickyCmykYellow.current,black))}, ${rgbToHex(...cmykToRgb(100,stickyCmykMagenta.current,stickyCmykYellow.current,black))})`}
-                     onChange={channelValue => { stickyCmykCyan.current = channelValue; emit(cmykToRgb(channelValue, stickyCmykMagenta.current, stickyCmykYellow.current, black)) }} />
+                     onChange={channelValue => { stickyCmykCyan.current = channelValue; emit(cmykToRgb(channelValue, stickyCmykMagenta.current, stickyCmykYellow.current, black), 'hue') }} />
                   <ChannelRow label="M" ariaLabel="Magenta" labelColor="#e840a0" value={magenta} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,0,stickyCmykYellow.current,black))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,100,stickyCmykYellow.current,black))})`}
-                     onChange={channelValue => { stickyCmykMagenta.current = channelValue; emit(cmykToRgb(stickyCmykCyan.current, channelValue, stickyCmykYellow.current, black)) }} />
+                     onChange={channelValue => { stickyCmykMagenta.current = channelValue; emit(cmykToRgb(stickyCmykCyan.current, channelValue, stickyCmykYellow.current, black), 'hue') }} />
                   <ChannelRow label="Y" ariaLabel="Yellow" labelColor="#c8b800" value={yellow} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,0,black))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,100,black))})`}
-                     onChange={channelValue => { stickyCmykYellow.current = channelValue; emit(cmykToRgb(stickyCmykCyan.current, stickyCmykMagenta.current, channelValue, black)) }} />
+                     onChange={channelValue => { stickyCmykYellow.current = channelValue; emit(cmykToRgb(stickyCmykCyan.current, stickyCmykMagenta.current, channelValue, black), 'hue') }} />
                   <ChannelRow label="K" ariaLabel="Black" labelColor="#888" value={black} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,stickyCmykYellow.current,0))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,stickyCmykYellow.current,100))})`}
-                     onChange={channelValue => emit(cmykToRgb(stickyCmykCyan.current, stickyCmykMagenta.current, stickyCmykYellow.current, channelValue))} />
+                     onChange={channelValue => emit(cmykToRgb(stickyCmykCyan.current, stickyCmykMagenta.current, stickyCmykYellow.current, channelValue), 'hue')} />
                </>
             )}
 

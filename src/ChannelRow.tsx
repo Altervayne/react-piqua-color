@@ -15,6 +15,8 @@ export interface ChannelRowProps {
 
 export function ChannelRow({ label, labelColor, value, min, max, gradient, onChange, onCommit }: ChannelRowProps) {
    const [rawInput, setRawInput] = useState(String(value))
+   // Mirror the committed numeric value back into the editable field.
+   // eslint-disable-next-line react-hooks/set-state-in-effect
    useEffect(() => { setRawInput(String(value)) }, [value])
 
    function commit(rawValue: string) {

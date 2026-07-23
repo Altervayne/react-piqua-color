@@ -6,7 +6,7 @@ square, a hue bar, segmented mode tabs, and labelled channel sliders for
 hue stable through degenerate colors (black, white, gray) are baked in.
 
 Styling is fully self-contained via a single stylesheet driven by CSS custom
-properties — **no Tailwind, no CSS framework required**. Drop it into any React app.
+properties, **no Tailwind, no CSS framework required**. Drop it into any React app.
 
 ## Install
 

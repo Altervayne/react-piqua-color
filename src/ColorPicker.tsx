@@ -5,7 +5,7 @@
    handlers, so the values are current. The refs intentionally bypass the RGB
    round-trip to prevent hue drift on degenerate colors (black, white, gray →
    hue=0 from any conversion). */
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useId } from 'react'
 import { ChannelRow } from './ChannelRow'
 import { SwatchButton } from './SwatchButton'
 import {
@@ -156,6 +156,68 @@ export function ColorPicker({
       emit(hsvToRgb(newHue, hsvSaturation, hsvValue))
    }
 
+   // Arrows drive saturation (X) and brightness (Y); Shift widens the step.
+   // Hue is held via the sticky ref, exactly as during a pointer drag.
+   function keySV(event: React.KeyboardEvent<HTMLDivElement>) {
+      const step = event.shiftKey ? 10 : 1
+      let newSaturation = hsvSaturation, newValue = hsvValue
+      switch (event.key) {
+         case 'ArrowRight': newSaturation += step; break
+         case 'ArrowLeft':  newSaturation -= step; break
+         case 'ArrowUp':    newValue += step; break
+         case 'ArrowDown':  newValue -= step; break
+         case 'Home':       newSaturation = 0; break
+         case 'End':        newSaturation = 100; break
+         default: return
+      }
+      event.preventDefault()
+      newSaturation = Math.max(0, Math.min(100, newSaturation))
+      newValue      = Math.max(0, Math.min(100, newValue))
+      emit(hsvToRgb(stickyHsvHue.current, newSaturation, newValue))
+   }
+
+   function keyHue(event: React.KeyboardEvent<HTMLDivElement>) {
+      let newHue = stickyHsvHue.current
+      switch (event.key) {
+         case 'ArrowRight': case 'ArrowUp':   newHue += event.shiftKey ? 10 : 1; break
+         case 'ArrowLeft':  case 'ArrowDown': newHue -= event.shiftKey ? 10 : 1; break
+         case 'PageUp':   newHue += 10; break
+         case 'PageDown': newHue -= 10; break
+         case 'Home':     newHue = 0; break
+         case 'End':      newHue = 360; break
+         default: return
+      }
+      event.preventDefault()
+      newHue = Math.max(0, Math.min(360, newHue))
+      stickyHsvHue.current = newHue
+      emit(hsvToRgb(newHue, hsvSaturation, hsvValue))
+   }
+
+   // ==========
+   //  Mode tabs
+   // ==========
+   const tabsId = useId()
+   const panelId = `${tabsId}-panel`
+   const tabId = (colorMode: ColorMode) => `${tabsId}-tab-${colorMode}`
+   const tabRefs = useRef<Partial<Record<ColorMode, HTMLButtonElement | null>>>({})
+
+   // Roving arrow navigation with automatic activation (WAI-ARIA tabs pattern).
+   function keyTabs(event: React.KeyboardEvent<HTMLButtonElement>) {
+      const index = MODES.indexOf(mode)
+      let nextIndex: number
+      switch (event.key) {
+         case 'ArrowRight': nextIndex = (index + 1) % MODES.length; break
+         case 'ArrowLeft':  nextIndex = (index - 1 + MODES.length) % MODES.length; break
+         case 'Home':       nextIndex = 0; break
+         case 'End':        nextIndex = MODES.length - 1; break
+         default: return
+      }
+      event.preventDefault()
+      const nextMode = MODES[nextIndex]
+      setMode(nextMode)
+      tabRefs.current[nextMode]?.focus()
+   }
+
    // ==========
    //  Hex input
    // ==========
@@ -177,9 +239,15 @@ export function ColorPicker({
             style={{
                background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${pureHue})`,
             }}
+            role="slider"
+            tabIndex={0}
+            aria-label="Saturation and brightness"
+            aria-valuetext={`Saturation ${hsvSaturation}%, brightness ${hsvValue}%`}
+            onKeyDown={keySV}
             onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pickSV(event) }}
             onPointerMove={event => { if (event.buttons === 0) return; pickSV(event) }}
             onPointerUp={commit}
+            onBlur={commit}
          >
             <div
                className="pqc-sv-thumb"
@@ -194,9 +262,18 @@ export function ColorPicker({
             ref={hueRef}
             className="pqc-hue"
             style={{ background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)' }}
+            role="slider"
+            tabIndex={0}
+            aria-label="Hue"
+            aria-valuemin={0}
+            aria-valuemax={360}
+            aria-valuenow={stickyHsvHue.current}
+            aria-valuetext={`${stickyHsvHue.current}°`}
+            onKeyDown={keyHue}
             onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pickHue(event) }}
             onPointerMove={event => { if (event.buttons === 0) return; pickHue(event) }}
             onPointerUp={commit}
+            onBlur={commit}
          >
             <div
                className="pqc-hue-thumb"
@@ -207,12 +284,19 @@ export function ColorPicker({
          {/* ========== */}
          {/*  Mode tabs */}
          {/* ========== */}
-         <div className="pqc-tabs">
+         <div className="pqc-tabs" role="tablist" aria-label="Color format">
             {MODES.map(colorMode => (
                <button
                   key={colorMode}
+                  ref={element => { tabRefs.current[colorMode] = element }}
                   type="button"
+                  role="tab"
+                  id={tabId(colorMode)}
+                  aria-selected={mode === colorMode}
+                  aria-controls={panelId}
+                  tabIndex={mode === colorMode ? 0 : -1}
                   onClick={() => setMode(colorMode)}
+                  onKeyDown={keyTabs}
                   className={`pqc-tab${mode === colorMode ? ' pqc-tab--active' : ''}`}
                >
                   {colorMode}
@@ -223,7 +307,7 @@ export function ColorPicker({
          {/* ============= */}
          {/*  Mode content */}
          {/* ============= */}
-         <div className="pqc-mode">
+         <div className="pqc-mode" role="tabpanel" id={panelId} aria-labelledby={tabId(mode)}>
 
             {mode === 'hex' && (
                <div className="pqc-hex-row">
@@ -260,13 +344,13 @@ export function ColorPicker({
 
             {mode === 'rgb' && (
                <>
-                  <ChannelRow label="R" labelColor="#e55" value={red} min={0} max={255} onCommit={commit}
+                  <ChannelRow label="R" ariaLabel="Red" labelColor="#e55" value={red} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(0,${green},${blue}), rgb(255,${green},${blue}))`}
                      onChange={channelValue => emit([channelValue, green, blue])} />
-                  <ChannelRow label="G" labelColor="#5a5" value={green} min={0} max={255} onCommit={commit}
+                  <ChannelRow label="G" ariaLabel="Green" labelColor="#5a5" value={green} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(${red},0,${blue}), rgb(${red},255,${blue}))`}
                      onChange={channelValue => emit([red, channelValue, blue])} />
-                  <ChannelRow label="B" labelColor="#59f" value={blue} min={0} max={255} onCommit={commit}
+                  <ChannelRow label="B" ariaLabel="Blue" labelColor="#59f" value={blue} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(${red},${green},0), rgb(${red},${green},255))`}
                      onChange={channelValue => emit([red, green, channelValue])} />
                </>
@@ -274,13 +358,13 @@ export function ColorPicker({
 
             {mode === 'hsl' && (
                <>
-                  <ChannelRow label="H" labelColor="#aaa" value={stickyHslHue.current} min={0} max={360} onCommit={commit}
+                  <ChannelRow label="H" ariaLabel="Hue" labelColor="#aaa" value={stickyHslHue.current} min={0} max={360} onCommit={commit}
                      gradient="linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)"
                      onChange={channelValue => { stickyHslHue.current = channelValue; emit(hslToRgb(channelValue, stickyHslSaturation.current, hslLightness)) }} />
-                  <ChannelRow label="S" labelColor="#aaa" value={stickyHslSaturation.current} min={0} max={100} onCommit={commit}
+                  <ChannelRow label="S" ariaLabel="Saturation" labelColor="#aaa" value={stickyHslSaturation.current} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, hsl(${stickyHslHue.current},0%,${hslLightness}%), hsl(${stickyHslHue.current},100%,${hslLightness}%))`}
                      onChange={channelValue => { stickyHslSaturation.current = channelValue; emit(hslToRgb(stickyHslHue.current, channelValue, hslLightness)) }} />
-                  <ChannelRow label="L" labelColor="#aaa" value={hslLightness} min={0} max={100} onCommit={commit}
+                  <ChannelRow label="L" ariaLabel="Lightness" labelColor="#aaa" value={hslLightness} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,0%), hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,50%), hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,100%))`}
                      onChange={channelValue => emit(hslToRgb(stickyHslHue.current, stickyHslSaturation.current, channelValue))} />
                </>
@@ -288,16 +372,16 @@ export function ColorPicker({
 
             {mode === 'cmyk' && (
                <>
-                  <ChannelRow label="C" labelColor="#22c8d8" value={cyan} min={0} max={100} onCommit={commit}
+                  <ChannelRow label="C" ariaLabel="Cyan" labelColor="#22c8d8" value={cyan} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(0,stickyCmykMagenta.current,stickyCmykYellow.current,black))}, ${rgbToHex(...cmykToRgb(100,stickyCmykMagenta.current,stickyCmykYellow.current,black))})`}
                      onChange={channelValue => { stickyCmykCyan.current = channelValue; emit(cmykToRgb(channelValue, stickyCmykMagenta.current, stickyCmykYellow.current, black)) }} />
-                  <ChannelRow label="M" labelColor="#e840a0" value={magenta} min={0} max={100} onCommit={commit}
+                  <ChannelRow label="M" ariaLabel="Magenta" labelColor="#e840a0" value={magenta} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,0,stickyCmykYellow.current,black))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,100,stickyCmykYellow.current,black))})`}
                      onChange={channelValue => { stickyCmykMagenta.current = channelValue; emit(cmykToRgb(stickyCmykCyan.current, channelValue, stickyCmykYellow.current, black)) }} />
-                  <ChannelRow label="Y" labelColor="#c8b800" value={yellow} min={0} max={100} onCommit={commit}
+                  <ChannelRow label="Y" ariaLabel="Yellow" labelColor="#c8b800" value={yellow} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,0,black))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,100,black))})`}
                      onChange={channelValue => { stickyCmykYellow.current = channelValue; emit(cmykToRgb(stickyCmykCyan.current, stickyCmykMagenta.current, channelValue, black)) }} />
-                  <ChannelRow label="K" labelColor="#888" value={black} min={0} max={100} onCommit={commit}
+                  <ChannelRow label="K" ariaLabel="Black" labelColor="#888" value={black} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,stickyCmykYellow.current,0))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,stickyCmykYellow.current,100))})`}
                      onChange={channelValue => emit(cmykToRgb(stickyCmykCyan.current, stickyCmykMagenta.current, stickyCmykYellow.current, channelValue))} />
                </>
@@ -310,8 +394,8 @@ export function ColorPicker({
          {/* ============================ */}
          {swatches && swatches.length > 0 && (
             <div className="pqc-swatches">
-               <span className="pqc-swatches-label">{swatchesLabel}</span>
-               <div className="pqc-swatch-grid">
+               <span className="pqc-swatches-label" id={`${tabsId}-swatches-label`}>{swatchesLabel}</span>
+               <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-swatches-label`}>
                   {swatches.map((color, index) => (
                      <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={selectSwatch} />
                   ))}
@@ -321,8 +405,8 @@ export function ColorPicker({
 
          {recentColors && recentColors.length > 0 && (
             <div className="pqc-swatches">
-               <span className="pqc-swatches-label">{recentLabel}</span>
-               <div className="pqc-swatch-grid">
+               <span className="pqc-swatches-label" id={`${tabsId}-recent-label`}>{recentLabel}</span>
+               <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-recent-label`}>
                   {recentColors.map((color, index) => (
                      <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={selectSwatch} />
                   ))}

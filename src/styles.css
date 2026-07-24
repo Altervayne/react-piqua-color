@@ -1,33 +1,47 @@
 /* #############################################################################
    # react-piqua-color — self-contained stylesheet
    #
-   # All theme colors are CSS custom properties, defaulting to a light theme.
-   # Override any of the --pqc-* vars on a wrapping element (or :root) to
-   # re-theme. Genuinely dynamic values (SV/hue gradients, thumb positions,
-   # channel gradients) are supplied as inline styles by the component and are
-   # intentionally NOT expressed here.
+   # Theming: override any public --pqc-* token on the picker element (via the
+   # `className`/`style` props) OR on any ancestor — both inherit correctly. A
+   # ready-made dark theme ships as the opt-in `.pqc-dark` class (see bottom);
+   # for automatic dark mode, wrap that in your own `@media (prefers-color-scheme:
+   # dark)`. Internally each public token is read through a private --pqc-_* alias
+   # with the default baked in as a var() fallback, so the public token is never
+   # declared on the element and an ancestor override is free to inherit in.
+   #
+   # Genuinely dynamic values (SV/hue gradients, thumb positions, channel
+   # gradients) are supplied as inline styles by the component, not here.
    ############################################################################# */
 
 :where(.pqc-root) {
-   /* ============ */
-   /*  Theme vars  */
-   /* ============ */
-   --pqc-surface: #ffffff; /* raised surface — active mode tab */
-   --pqc-bg: #f1f2f4;      /* recessed background — tab strip, hex field */
-   --pqc-text: #1a1d21;    /* primary text */
-   --pqc-muted: #6b7280;   /* secondary / muted text */
-   --pqc-border: #d4d7dd;  /* hairline borders */
-   --pqc-accent: #f97316;  /* accent (fallback swatch color) */
+   /* ============================= */
+   /*  Public tokens → private alias */
+   /* ============================= */
+   /* Colors */
+   --pqc-_surface:    var(--pqc-surface,    #ffffff); /* raised surface — active mode tab */
+   --pqc-_bg:         var(--pqc-bg,         #f1f2f4); /* recessed background — tab strip, hex field */
+   --pqc-_text:       var(--pqc-text,       #1a1d21); /* primary text */
+   --pqc-_muted:      var(--pqc-muted,      #6b7280); /* secondary / muted text */
+   --pqc-_border:     var(--pqc-border,     #d4d7dd); /* hairline borders */
+   --pqc-_accent:     var(--pqc-accent,     #f97316); /* accent — focus rings */
+   --pqc-_thumb-ring: var(--pqc-thumb-ring, #ffffff); /* circular thumb border */
+   --pqc-_font-mono:  var(--pqc-font-mono,  ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace);
 
-   /* Non-color tokens */
-   --pqc-radius: 0.5rem;
-   --pqc-radius-sm: 0.375rem;
-   --pqc-thumb-ring: #ffffff; /* circular thumb border */
-   --pqc-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+   /* Shape / size */
+   --pqc-_radius:       var(--pqc-radius,       0.5rem);
+   --pqc-_radius-sm:    var(--pqc-radius-sm,    0.375rem);
+   --pqc-_gap:          var(--pqc-gap,          0.625rem);
+   --pqc-_font-size:    var(--pqc-font-size,    0.75rem);
+   --pqc-_sv-height:    var(--pqc-sv-height,    120px);
+   --pqc-_hue-height:   var(--pqc-hue-height,   0.75rem);
+   --pqc-_track-height: var(--pqc-track-height, 0.5rem);
+   --pqc-_thumb-size:   var(--pqc-thumb-size,   0.875rem);
+   --pqc-_swatch-size:  var(--pqc-swatch-size,  1.25rem);
+   --pqc-_focus-width:  var(--pqc-focus-width,  2px);
 
    display: flex;
    flex-direction: column;
-   gap: 0.625rem;
+   gap: var(--pqc-_gap);
    user-select: none;
    -webkit-user-select: none;
 }
@@ -44,8 +58,8 @@
 .pqc-sv {
    position: relative;
    width: 100%;
-   height: 120px;
-   border-radius: var(--pqc-radius-sm);
+   height: var(--pqc-_sv-height);
+   border-radius: var(--pqc-_radius-sm);
    overflow: hidden;
    cursor: crosshair;
    touch-action: none;
@@ -56,22 +70,22 @@
 .pqc-sv:focus-visible,
 .pqc-hue:focus-visible,
 .pqc-slider:focus-visible {
-   outline: 2px solid var(--pqc-accent);
+   outline: var(--pqc-_focus-width) solid var(--pqc-_accent);
    outline-offset: 2px;
 }
 
 .pqc-tab:focus-visible {
-   outline: 2px solid var(--pqc-accent);
+   outline: var(--pqc-_focus-width) solid var(--pqc-_accent);
    outline-offset: -2px;
 }
 
 .pqc-sv-thumb {
    position: absolute;
-   width: 0.875rem;
-   height: 0.875rem;
+   width: var(--pqc-_thumb-size);
+   height: var(--pqc-_thumb-size);
    transform: translate(-50%, -50%);
    border-radius: 9999px;
-   border: 2px solid var(--pqc-thumb-ring);
+   border: 2px solid var(--pqc-_thumb-ring);
    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
    pointer-events: none;
 }
@@ -82,7 +96,7 @@
 .pqc-hue {
    position: relative;
    width: 100%;
-   height: 0.75rem;
+   height: var(--pqc-_hue-height);
    border-radius: 9999px;
    cursor: pointer;
    touch-action: none;
@@ -91,11 +105,12 @@
 .pqc-hue-thumb {
    position: absolute;
    top: 50%;
-   width: 1rem;
-   height: 1rem;
+   /* Slightly larger than the SV/slider thumbs, tracking the thumb-size token. */
+   width: calc(var(--pqc-_thumb-size) + 0.125rem);
+   height: calc(var(--pqc-_thumb-size) + 0.125rem);
    transform: translate(-50%, -50%);
    border-radius: 9999px;
-   border: 2px solid var(--pqc-thumb-ring);
+   border: 2px solid var(--pqc-_thumb-ring);
    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
    pointer-events: none;
 }
@@ -107,9 +122,9 @@
    display: flex;
    gap: 0.125rem;
    padding: 0.125rem;
-   background: var(--pqc-bg);
-   border: 1px solid var(--pqc-border);
-   border-radius: var(--pqc-radius);
+   background: var(--pqc-_bg);
+   border: 1px solid var(--pqc-_border);
+   border-radius: var(--pqc-_radius);
 }
 
 .pqc-tab {
@@ -117,10 +132,10 @@
    padding: 0.25rem 0;
    border: none;
    background: transparent;
-   border-radius: var(--pqc-radius-sm);
-   color: var(--pqc-muted);
-   font-family: var(--pqc-font-mono);
-   font-size: 0.75rem;
+   border-radius: var(--pqc-_radius-sm);
+   color: var(--pqc-_muted);
+   font-family: var(--pqc-_font-mono);
+   font-size: var(--pqc-_font-size);
    line-height: 1rem;
    font-weight: 600;
    text-transform: uppercase;
@@ -130,12 +145,12 @@
 }
 
 .pqc-tab:hover {
-   color: var(--pqc-text);
+   color: var(--pqc-_text);
 }
 
 .pqc-tab--active {
-   background: var(--pqc-surface);
-   color: var(--pqc-text);
+   background: var(--pqc-_surface);
+   color: var(--pqc-_text);
    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
@@ -161,8 +176,8 @@
    width: 1.75rem;
    height: 1.75rem;
    flex-shrink: 0;
-   border-radius: var(--pqc-radius-sm);
-   border: 1px solid var(--pqc-border);
+   border-radius: var(--pqc-_radius-sm);
+   border: 1px solid var(--pqc-_border);
 }
 
 .pqc-hex-field {
@@ -171,15 +186,15 @@
    flex: 1 1 0%;
    gap: 0.25rem;
    padding: 0.375rem 0.625rem;
-   background: var(--pqc-bg);
-   border: 1px solid var(--pqc-border);
-   border-radius: var(--pqc-radius);
+   background: var(--pqc-_bg);
+   border: 1px solid var(--pqc-_border);
+   border-radius: var(--pqc-_radius);
 }
 
 .pqc-hex-hash {
-   font-family: var(--pqc-font-mono);
-   font-size: 0.75rem;
-   color: var(--pqc-muted);
+   font-family: var(--pqc-_font-mono);
+   font-size: var(--pqc-_font-size);
+   color: var(--pqc-_muted);
 }
 
 .pqc-hex-input {
@@ -188,9 +203,9 @@
    background: transparent;
    border: none;
    outline: none;
-   font-family: var(--pqc-font-mono);
-   font-size: 0.75rem;
-   color: var(--pqc-text);
+   font-family: var(--pqc-_font-mono);
+   font-size: var(--pqc-_font-size);
+   color: var(--pqc-_text);
 }
 
 /* ============== */
@@ -205,8 +220,8 @@
 .pqc-channel-label {
    width: 1rem;
    text-align: center;
-   font-family: var(--pqc-font-mono);
-   font-size: 0.75rem;
+   font-family: var(--pqc-_font-mono);
+   font-size: var(--pqc-_font-size);
    font-weight: 700;
    user-select: none;
 }
@@ -217,9 +232,9 @@
    background: transparent;
    border: none;
    outline: none;
-   font-family: var(--pqc-font-mono);
-   font-size: 0.75rem;
-   color: var(--pqc-text);
+   font-family: var(--pqc-_font-mono);
+   font-size: var(--pqc-_font-size);
+   color: var(--pqc-_text);
 }
 
 /* ============== */
@@ -228,7 +243,7 @@
 .pqc-slider {
    position: relative;
    flex: 1 1 0%;
-   height: 0.5rem;
+   height: var(--pqc-_track-height);
    border-radius: 9999px;
    cursor: pointer;
    touch-action: none;
@@ -237,11 +252,11 @@
 .pqc-slider-thumb {
    position: absolute;
    top: 50%;
-   width: 0.875rem;
-   height: 0.875rem;
+   width: var(--pqc-_thumb-size);
+   height: var(--pqc-_thumb-size);
    transform: translate(-50%, -50%);
    border-radius: 9999px;
-   border: 2px solid var(--pqc-thumb-ring);
+   border: 2px solid var(--pqc-_thumb-ring);
    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
    pointer-events: none;
 }
@@ -256,13 +271,13 @@
 }
 
 .pqc-swatches-label {
-   font-family: var(--pqc-font-mono);
+   font-family: var(--pqc-_font-mono);
    font-size: 0.6875rem;
    line-height: 1rem;
    font-weight: 600;
    text-transform: uppercase;
    letter-spacing: 0.025em;
-   color: var(--pqc-muted);
+   color: var(--pqc-_muted);
 }
 
 .pqc-swatch-grid {
@@ -272,12 +287,12 @@
 }
 
 .pqc-swatch {
-   width: 1.25rem;
-   height: 1.25rem;
+   width: var(--pqc-_swatch-size);
+   height: var(--pqc-_swatch-size);
    padding: 0;
    flex-shrink: 0;
-   border-radius: var(--pqc-radius-sm);
-   border: 1px solid var(--pqc-border);
+   border-radius: var(--pqc-_radius-sm);
+   border: 1px solid var(--pqc-_border);
    cursor: pointer;
    transition: transform 0.1s ease;
 }
@@ -287,6 +302,21 @@
 }
 
 .pqc-swatch:focus-visible {
-   outline: 2px solid var(--pqc-accent);
+   outline: var(--pqc-_focus-width) solid var(--pqc-_accent);
    outline-offset: 1px;
+}
+
+/* ============ */
+/*  Dark preset */
+/* ============ */
+/* Opt-in: add `pqc-dark` to the picker (className prop) or any ancestor. It sets
+   the public tokens; the private --pqc-_* aliases read them. Override individual
+   --pqc-* tokens afterward to fine-tune. */
+.pqc-dark {
+   --pqc-surface: #2a2d31;
+   --pqc-bg: #1a1d21;
+   --pqc-text: #e6e8eb;
+   --pqc-muted: #9aa0a6;
+   --pqc-border: #3a3d42;
+   --pqc-thumb-ring: #e6e8eb;
 }

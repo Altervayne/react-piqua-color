@@ -1,0 +1,113 @@
+* { box-sizing: border-box; }
+
+body {
+   margin: 0;
+   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.demo {
+   --demo-bg: #f4f5f7;
+   --demo-surface: #ffffff;
+   --demo-text: #1a1d21;
+   --demo-muted: #6b7280;
+   --demo-border: #e4e6ea;
+
+   min-height: 100vh;
+   background: var(--demo-bg);
+   color: var(--demo-text);
+   transition: background 0.2s ease, color 0.2s ease;
+}
+
+.demo--dark {
+   --demo-bg: #15171a;
+   --demo-surface: #22262b;
+   --demo-text: #e6e8eb;
+   --demo-muted: #9aa0a6;
+   --demo-border: #31353b;
+}
+
+/* The picker themes itself via the shipped `pqc-dark` class (passed as its
+   className prop) — no manual --pqc-* overrides needed here anymore. */
+
+.demo-inner {
+   max-width: 640px;
+   margin: 0 auto;
+   padding: 48px 24px;
+}
+
+.demo-head {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   margin-bottom: 28px;
+}
+
+.demo-head h1 {
+   margin: 0;
+   font-size: 1.25rem;
+   font-weight: 650;
+   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.demo-toggle {
+   padding: 6px 12px;
+   font-size: 0.8125rem;
+   font-weight: 600;
+   color: var(--demo-text);
+   background: var(--demo-surface);
+   border: 1px solid var(--demo-border);
+   border-radius: 8px;
+   cursor: pointer;
+}
+
+.demo-toggle:hover { border-color: var(--demo-muted); }
+
+.demo-grid {
+   display: grid;
+   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+   gap: 24px;
+   align-items: start;
+}
+
+@media (max-width: 560px) {
+   .demo-grid { grid-template-columns: 1fr; }
+}
+
+.demo-card {
+   padding: 16px;
+   background: var(--demo-surface);
+   border: 1px solid var(--demo-border);
+   border-radius: 14px;
+   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.demo-preview {
+   display: flex;
+   flex-direction: column;
+   gap: 16px;
+}
+
+.demo-chip {
+   height: 96px;
+   border-radius: 14px;
+   border: 1px solid var(--demo-border);
+}
+
+.demo-readout {
+   display: grid;
+   grid-template-columns: auto 1fr;
+   gap: 4px 16px;
+   margin: 0;
+   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+   font-size: 0.8125rem;
+}
+
+.demo-readout dt { color: var(--demo-muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.6875rem; align-self: center; }
+.demo-readout dd { margin: 0; }
+
+.demo-hint {
+   margin: 0;
+   font-size: 0.75rem;
+   line-height: 1.5;
+   color: var(--demo-muted);
+}

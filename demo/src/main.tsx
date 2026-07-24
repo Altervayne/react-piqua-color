@@ -16,6 +16,7 @@ function App() {
    // The consumer owns recents — cap and dedupe here, not in the picker.
    const [recents, setRecents] = useState<string[]>([])
    const [dark, setDark] = useState(false)
+   const [swatchesTop, setSwatchesTop] = useState(false)
    const [r, g, b] = hexToRgb(color)
 
    return (
@@ -23,9 +24,14 @@ function App() {
          <div className="demo-inner">
             <header className="demo-head">
                <h1>react-piqua-color</h1>
-               <button type="button" className="demo-toggle" onClick={() => setDark(value => !value)}>
-                  {dark ? '☀ Light' : '☾ Dark'}
-               </button>
+               <div className="demo-actions">
+                  <button type="button" className="demo-toggle" onClick={() => setSwatchesTop(value => !value)}>
+                     Swatches: {swatchesTop ? 'top' : 'bottom'}
+                  </button>
+                  <button type="button" className="demo-toggle" onClick={() => setDark(value => !value)}>
+                     {dark ? '☀ Light' : '☾ Dark'}
+                  </button>
+               </div>
             </header>
 
             <div className="demo-grid">
@@ -36,6 +42,7 @@ function App() {
                      onChange={setColor}
                      swatches={SWATCHES}
                      recentColors={recents}
+                     swatchesPosition={swatchesTop ? 'top' : 'bottom'}
                      onColorCommitted={committed =>
                         setRecents(previous => [committed, ...previous.filter(entry => entry !== committed)].slice(0, 12))
                      }

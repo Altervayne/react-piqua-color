@@ -34,6 +34,8 @@ export interface ColorPickerProps {
    swatchesLabel?: string
    /** Label above the `recentColors` row. */
    recentLabel?: string
+   /** Place the swatches + recents block above or below the picker body. Default `'bottom'`. */
+   swatchesPosition?: 'top' | 'bottom'
    /** Appended to the root's class, alongside `pqc-root`. */
    className?: string
    /** Merged onto the root element's inline style — handy for setting `--pqc-*` tokens. */
@@ -48,6 +50,7 @@ export function ColorPicker({
    onColorCommitted,
    swatchesLabel = 'Default colors',
    recentLabel = 'Recent',
+   swatchesPosition = 'bottom',
    className,
    style,
 }: ColorPickerProps) {
@@ -255,8 +258,40 @@ export function ColorPicker({
    // eslint-disable-next-line react-hooks/set-state-in-effect
    useEffect(() => { setHexRaw(currentHex.replace('#', '')) }, [currentHex])
 
+   // The swatches + recents rows move as one block; `swatchesPosition` places it
+   // above or below the picker body. Reordered in the DOM (not CSS) so reading
+   // and focus order follow the visual order.
+   const swatchesBlock = (
+      <>
+         {swatches && swatches.length > 0 && (
+            <div className="pqc-swatches">
+               <span className="pqc-swatches-label" id={`${tabsId}-swatches-label`}>{swatchesLabel}</span>
+               <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-swatches-label`}>
+                  {swatches.map((color, index) => (
+                     <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={selectSwatch} />
+                  ))}
+               </div>
+            </div>
+         )}
+
+         {recentColors && recentColors.length > 0 && (
+            <div className="pqc-swatches">
+               <span className="pqc-swatches-label" id={`${tabsId}-recent-label`}>{recentLabel}</span>
+               <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-recent-label`}>
+                  {recentColors.map((color, index) => (
+                     <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={selectSwatch} />
+                  ))}
+               </div>
+            </div>
+         )}
+      </>
+   )
+
    return (
       <div className={`pqc-root${className ? ` ${className}` : ''}`} style={style}>
+
+         {swatchesPosition === 'top' && swatchesBlock}
+
 
          {/* ========== */}
          {/*  SV square */}
@@ -420,27 +455,7 @@ export function ColorPicker({
          {/* ============================ */}
          {/*  Swatches & recents (display) */}
          {/* ============================ */}
-         {swatches && swatches.length > 0 && (
-            <div className="pqc-swatches">
-               <span className="pqc-swatches-label" id={`${tabsId}-swatches-label`}>{swatchesLabel}</span>
-               <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-swatches-label`}>
-                  {swatches.map((color, index) => (
-                     <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={selectSwatch} />
-                  ))}
-               </div>
-            </div>
-         )}
-
-         {recentColors && recentColors.length > 0 && (
-            <div className="pqc-swatches">
-               <span className="pqc-swatches-label" id={`${tabsId}-recent-label`}>{recentLabel}</span>
-               <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-recent-label`}>
-                  {recentColors.map((color, index) => (
-                     <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={selectSwatch} />
-                  ))}
-               </div>
-            </div>
-         )}
+         {swatchesPosition === 'bottom' && swatchesBlock}
       </div>
    )
 }

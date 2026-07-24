@@ -48,6 +48,26 @@ describe('ColorPicker — always-visible hue follows every edit path', () => {
    })
 })
 
+describe('ColorPicker — swatch placement', () => {
+   // Placement must move in the DOM (not via CSS order), so reading/focus order
+   // follows the visual order. Assert document position, not styling.
+   const swatchesBeforeBody = () => {
+      const group = screen.getByRole('group', { name: 'Default colors' })
+      const body = screen.getByRole('slider', { name: 'Saturation and brightness' })
+      return Boolean(group.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING)
+   }
+
+   it('renders swatches below the body by default', () => {
+      render(<ColorPicker value="#f97316" onChange={() => {}} swatches={['#000000']} />)
+      expect(swatchesBeforeBody()).toBe(false)
+   })
+
+   it('renders swatches above the body when swatchesPosition="top"', () => {
+      render(<ColorPicker value="#f97316" onChange={() => {}} swatches={['#000000']} swatchesPosition="top" />)
+      expect(swatchesBeforeBody()).toBe(true)
+   })
+})
+
 describe('ColorPicker — cross-mode sticky refs stay in step', () => {
    it('keeps the CMYK hold fresh after an HSL edit (no color jump)', () => {
       render(<Controlled initial="#ff0000" />)

@@ -63,6 +63,7 @@ caps, dedupes, and persists **nothing**; that is entirely the consumer's job.
 | `recentColors`     | `string[]`                  | no       | Recents row. Clickable display only; omit to hide the row.                                  |
 | `swatchesLabel`    | `string`                    | no       | Label above the swatches row. Default `"Default colors"`.                                   |
 | `recentLabel`      | `string`                    | no       | Label above the recents row. Default `"Recent"`.                                             |
+| `swatchesPosition` | `'top' \| 'bottom'`         | no       | Place the swatches + recents block above or below the picker body. Default `'bottom'`.       |
 | `className`        | `string`                    | no       | Appended to the root's class, alongside `pqc-root`.                                          |
 | `style`            | `React.CSSProperties`       | no       | Merged onto the root's inline style — handy for setting `--pqc-*` tokens inline.             |
 

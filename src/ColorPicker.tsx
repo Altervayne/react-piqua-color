@@ -408,6 +408,16 @@ export function ColorPicker({
    // Every channel slider shares the same part-level classes; spread onto each row.
    const rowSlots = { sliderClassName: classNames?.slider, sliderThumbClassName: classNames?.sliderThumb }
 
+   // A swatch is "selected" when it normalizes to the current color. Normalizing
+   // through hexToRgba then the same formatter as `currentHex` makes the match
+   // case-insensitive, shorthand-aware (#f80 == #ff8800), and alpha-aware.
+   const swatchSelected = (swatchColor: string) => {
+      const parsed = hexToRgba(swatchColor)
+      if (!parsed) return false
+      const canonical = alphaEnabled ? rgbaToHex(...parsed) : rgbToHex(parsed[0], parsed[1], parsed[2])
+      return canonical === currentHex
+   }
+
    // The swatches + recents rows move as one block; `swatchesPosition` places it
    // above or below the picker body. Reordered in the DOM (not CSS) so reading
    // and focus order follow the visual order.
@@ -418,7 +428,7 @@ export function ColorPicker({
                <span className="pqc-swatches-label" id={`${tabsId}-swatches-label`}>{swatchesLabel}</span>
                <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-swatches-label`}>
                   {swatches.map((color, index) => (
-                     <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={c => selectSwatch(c, 'swatch')} className={classNames?.swatch} />
+                     <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={c => selectSwatch(c, 'swatch')} selected={swatchSelected(color)} className={classNames?.swatch} />
                   ))}
                </div>
             </div>
@@ -429,7 +439,7 @@ export function ColorPicker({
                <span className="pqc-swatches-label" id={`${tabsId}-recent-label`}>{recentLabel}</span>
                <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-recent-label`}>
                   {recentColors.map((color, index) => (
-                     <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={c => selectSwatch(c, 'recent')} className={classNames?.swatch} />
+                     <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={c => selectSwatch(c, 'recent')} selected={swatchSelected(color)} className={classNames?.swatch} />
                   ))}
                </div>
             </div>

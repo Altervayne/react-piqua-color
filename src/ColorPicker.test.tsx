@@ -207,6 +207,33 @@ describe('ColorPicker — copy & eyedropper', () => {
    })
 })
 
+describe('ColorPicker — selected swatch', () => {
+   const ariaCurrent = (name: string) => screen.getByRole('button', { name }).getAttribute('aria-current')
+
+   it('marks the swatch and recent that equal the current value', () => {
+      render(
+         <ColorPicker value="#3b82f6" onChange={() => {}}
+            swatches={['#3b82f6', '#ef4444']} recentColors={['#3b82f6']} />,
+      )
+      const matches = screen.getAllByRole('button', { name: '#3b82f6' }) // swatch + recent
+      expect(matches).toHaveLength(2)
+      matches.forEach(b => expect(b.getAttribute('aria-current')).toBe('true'))
+      expect(ariaCurrent('#ef4444')).toBeNull()
+   })
+
+   it('matches shorthand and is case-insensitive', () => {
+      render(<ColorPicker value="#ff8800" onChange={() => {}} swatches={['#F80', '#00ff00']} />)
+      expect(ariaCurrent('#F80')).toBe('true')
+      expect(ariaCurrent('#00ff00')).toBeNull()
+   })
+
+   it('is alpha-aware when alpha is on', () => {
+      render(<ColorPicker alpha value="#ff000080" onChange={() => {}} swatches={['#ff000080', '#ff0000']} />)
+      expect(ariaCurrent('#ff000080')).toBe('true')
+      expect(ariaCurrent('#ff0000')).toBeNull() // opaque red != 50%-alpha red
+   })
+})
+
 describe('ColorPicker — onColorCommitted source', () => {
    it('tags each commit with the interaction that produced it', async () => {
       class FakeEyeDropper { open() { return Promise.resolve({ sRGBHex: '#00ff00' }) } }

@@ -422,6 +422,11 @@
    outline-offset: 1px;
 }
 
+/* The swatch / recent equal to the current color: an accent ring with a gap. */
+.pqc-swatch--selected {
+   box-shadow: 0 0 0 1px var(--pqc-_surface), 0 0 0 3px var(--pqc-_accent);
+}
+
 /* ============ */
 /*  Dark preset */
 /* ============ */

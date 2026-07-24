@@ -21,7 +21,8 @@ properties, **no Tailwind, no CSS framework required**. Drop it into any React a
 - `hex` / `rgb` / `hsl` / `cmyk` modes, with a sticky hue that survives black,
   white, and gray
 - Opt-in alpha: 8-digit hex plus an opacity slider
-- "Default colors" and "recents" rows, placeable above or below the picker
+- "Default colors" and "recents" rows, placeable above or below the picker; the
+  swatch matching the current color is shown selected
 - Eyedropper (where the browser supports it) and copy-to-clipboard
 - Fully keyboard operable and screen-reader labelled
 - CSS custom-property theming, a ready-made dark preset, and per-part class hooks
@@ -70,6 +71,8 @@ live edit, and never holds the "official" color itself. The `swatches` and
 `recentColors` arrays are **display-only**: the picker renders a clickable square per
 entry and calls `onChange` then `onColorCommitted` when one is clicked. It stores,
 caps, dedupes, and persists **nothing**; that is entirely the consumer's job.
+Whichever swatch or recent equals the current `value` is shown selected (matched
+case-insensitively and shorthand-aware, respecting alpha when `alpha` is on).
 
 ## Props
 

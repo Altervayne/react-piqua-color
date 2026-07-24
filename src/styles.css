@@ -242,6 +242,32 @@
    flex-shrink: 0;
 }
 
+/* Eyedropper / copy icon buttons in the hex row. */
+.pqc-icon-btn {
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   flex-shrink: 0;
+   width: 1.75rem;
+   height: 1.75rem;
+   padding: 0;
+   border: 1px solid var(--pqc-_border);
+   border-radius: var(--pqc-_radius-sm);
+   background: var(--pqc-_bg);
+   color: var(--pqc-_muted);
+   cursor: pointer;
+   transition: color 0.12s ease;
+}
+
+.pqc-icon-btn:hover {
+   color: var(--pqc-_text);
+}
+
+.pqc-icon-btn:focus-visible {
+   outline: var(--pqc-_focus-width) solid var(--pqc-_accent);
+   outline-offset: 1px;
+}
+
 .pqc-hex-field {
    display: flex;
    align-items: center;

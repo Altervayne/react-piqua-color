@@ -90,6 +90,11 @@ The hex field accepts 3- and 6-digit input (plus 4- and 8-digit when `alpha` is
 on); shorthand like `f80` expands to `#ff8800` on blur. Output is always full
 length.
 
+Beside the hex field are a **copy** button and — where the browser supports the
+[EyeDropper API](https://developer.mozilla.org/docs/Web/API/EyeDropper) — an
+**eyedropper** to pick a color from anywhere on screen. The eyedropper button is
+feature-detected and simply absent where unsupported (e.g. Firefox).
+
 ## Theming
 
 Import the stylesheet once (`import 'react-piqua-color/style.css'`). Every knob is a

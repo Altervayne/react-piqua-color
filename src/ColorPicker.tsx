@@ -12,6 +12,12 @@ import {
    hsvToRgb, rgbToHsv, rgbToHsl, hslToRgb, rgbToCmyk, cmykToRgb, rgbToHex, hexToRgba, rgbaToHex,
 } from './color'
 
+// The EyeDropper API isn't in the DOM lib types yet.
+interface EyeDropper { open(): Promise<{ sRGBHex: string }> }
+declare global {
+   interface Window { EyeDropper?: { new (): EyeDropper } }
+}
+
 // ##################
 // # MAIN COMPONENT #
 // ##################
@@ -328,6 +334,43 @@ export function ColorPicker({
       return true
    }
 
+   // ==================
+   //  Eyedropper & copy
+   // ==================
+   // Detect the EyeDropper API after mount, so SSR and first client render agree
+   // (the button is absent both times, then appears once the client confirms it).
+   const [hasEyeDropper, setHasEyeDropper] = useState(false)
+   // eslint-disable-next-line react-hooks/set-state-in-effect
+   useEffect(() => { setHasEyeDropper(typeof window !== 'undefined' && 'EyeDropper' in window) }, [])
+
+   async function pickScreen() {
+      if (!window.EyeDropper) return
+      try {
+         const { sRGBHex } = await new window.EyeDropper().open()
+         const parsed = hexToRgba(sRGBHex)
+         if (parsed) {
+            // Screen-picked colors are opaque; keep the user's current opacity.
+            emit([parsed[0], parsed[1], parsed[2]], null, alphaRef.current)
+            onColorCommitted?.(emittedHex.current)
+         }
+      } catch {
+         // The user dismissed the picker (Esc) — nothing to do.
+      }
+   }
+
+   const [copied, setCopied] = useState(false)
+   const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+   useEffect(() => () => clearTimeout(copyTimer.current), [])
+
+   function copyHex() {
+      if (!navigator.clipboard) return
+      navigator.clipboard.writeText(currentHex).then(() => {
+         setCopied(true)
+         clearTimeout(copyTimer.current)
+         copyTimer.current = setTimeout(() => setCopied(false), 1200)
+      }).catch(() => { /* clipboard blocked — no feedback */ })
+   }
+
    // The swatches + recents rows move as one block; `swatchesPosition` places it
    // above or below the picker body. Reordered in the DOM (not CSS) so reading
    // and focus order follow the visual order.
@@ -507,10 +550,30 @@ export function ColorPicker({
                         className="pqc-hex-input"
                         placeholder={alphaEnabled ? 'rrggbbaa' : 'rrggbb'}
                      />
+                     {alphaEnabled && alphaPercent < 100 && (
+                        <span className="pqc-hex-opacity" aria-hidden="true">{alphaPercent}%</span>
+                     )}
                   </div>
-                  {alphaEnabled && alphaPercent < 100 && (
-                     <span className="pqc-hex-opacity" aria-hidden="true">{alphaPercent}%</span>
+                  {hasEyeDropper && (
+                     <button type="button" className="pqc-icon-btn" aria-label="Pick a color from the screen" onClick={pickScreen}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                           <path d="m2 22 1-1h3l9-9" /><path d="M3 21v-3l9-9" />
+                           <path d="m15 6 3.4-3.4c.8-.8 2.2-.8 3 0 .8.8.8 2.2 0 3L18 9l.4.4c.8.8.8 2.2 0 3-.8.8-2.2.8-3 0l-3.8-3.8c-.8-.8-.8-2.2 0-3 .8-.8 2.2-.8 3 0l.4.4Z" />
+                        </svg>
+                     </button>
                   )}
+                  <button type="button" className="pqc-icon-btn" aria-label={copied ? 'Copied' : 'Copy hex'} onClick={copyHex}>
+                     {copied ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                           <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                     ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                           <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                           <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </svg>
+                     )}
+                  </button>
                </div>
             )}
 

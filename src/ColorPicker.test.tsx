@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { useState } from 'react'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 import { ColorPicker } from './ColorPicker'
 
 afterEach(cleanup)
@@ -144,5 +144,41 @@ describe('ColorPicker — alpha', () => {
       fireEvent.change(hex, { target: { value: 'f80' } })
       fireEvent.blur(hex)
       expect(currentColor()).toBe('#ff8800ff')
+   })
+})
+
+describe('ColorPicker — copy & eyedropper', () => {
+   function Host({ initial = '#000000' }: { initial?: string }) {
+      const [color, setColor] = useState(initial)
+      return (
+         <>
+            <ColorPicker value={color} onChange={setColor} />
+            <output data-testid="color">{color}</output>
+         </>
+      )
+   }
+
+   it('copies the current hex to the clipboard and shows feedback', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+      render(<ColorPicker value="#3b82f6" onChange={() => {}} />)
+      fireEvent.click(screen.getByLabelText('Copy hex'))
+      expect(writeText).toHaveBeenCalledWith('#3b82f6')
+      expect(await screen.findByLabelText('Copied')).toBeTruthy()
+   })
+
+   it('applies a color picked via the EyeDropper API', async () => {
+      class FakeEyeDropper { open() { return Promise.resolve({ sRGBHex: '#00ff00' }) } }
+      window.EyeDropper = FakeEyeDropper
+      render(<Host />)
+      fireEvent.click(await screen.findByLabelText('Pick a color from the screen'))
+      await waitFor(() => expect(screen.getByTestId('color').textContent).toBe('#00ff00'))
+      delete window.EyeDropper
+   })
+
+   it('hides the eyedropper button when the API is unavailable', () => {
+      delete window.EyeDropper
+      render(<Host />)
+      expect(screen.queryByLabelText('Pick a color from the screen')).toBeNull()
    })
 })

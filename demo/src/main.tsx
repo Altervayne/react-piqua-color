@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react'
+import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ColorPicker } from 'react-piqua-color'
 import 'react-piqua-color/style.css'
@@ -19,6 +19,9 @@ function App() {
    const [swatchesTop, setSwatchesTop] = useState(false)
    const [alpha, setAlpha] = useState(false)
    const [lastSource, setLastSource] = useState('—')
+   // The eyedropper is Chromium-only; detect it so the hint matches reality.
+   const [hasEyeDropper, setHasEyeDropper] = useState(false)
+   useEffect(() => { setHasEyeDropper('EyeDropper' in window) }, [])
    const [r, g, b] = hexToRgb(color)
 
    return (
@@ -65,8 +68,11 @@ function App() {
                      <dt>committed via</dt><dd>{lastSource}</dd>
                   </dl>
                   <p className="demo-hint">
-                     Tab to any control, then arrows / shift+arrows / home / end.
-                     The SV square takes two-dimensional arrows.
+                     {hasEyeDropper
+                        ? 'The hex tab has an eyedropper (pick any on-screen color) and a copy button. '
+                        : 'The hex tab has a copy button; the eyedropper is Chromium-only, so it is hidden on this browser. '}
+                     Everything is keyboard operable: Tab to a control, then arrows
+                     (two-dimensional on the SV square), shift+arrows, home / end.
                   </p>
                </aside>
             </div>

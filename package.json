@@ -1,6 +1,6 @@
 {
   "name": "react-piqua-color",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A portable, fully controlled React color picker: SV square, hue bar, and hex/rgb/hsl/cmyk sliders. Self-contained styling via CSS custom properties, no CSS framework required.",
   "type": "module",
   "license": "MIT",

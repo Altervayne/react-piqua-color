@@ -133,9 +133,26 @@
    top. The checkerboard also backs the hex preview swatch and any transparent
    swatch, so opacity is legible everywhere. Opaque fills hide it entirely, so
    the no-alpha build looks unchanged. */
-.pqc-alpha,
-.pqc-hex-swatch,
-.pqc-swatch {
+/* The alpha bar keeps the checkerboard as its own background: its thumb overflows
+   the bar by design, so the bar can't use overflow:hidden to clip a child. As a
+   full-width pill it never takes a custom radius, so background clipping is fine. */
+.pqc-alpha {
+   background-color: var(--pqc-_surface);
+   background-image:
+      linear-gradient(45deg, var(--pqc-_checker) 25%, transparent 25%, transparent 75%, var(--pqc-_checker) 75%),
+      linear-gradient(45deg, var(--pqc-_checker) 25%, transparent 25%, transparent 75%, var(--pqc-_checker) 75%);
+   background-size: 8px 8px;
+   background-position: 0 0, 4px 4px;
+}
+
+/* The swatch + hex preview draw the checkerboard as a real child box (::before)
+   rather than a background, so the parent's overflow:hidden clips it to any custom
+   rounding. A background-image would only clip via border-radius, escaping overflow. */
+.pqc-swatch::before,
+.pqc-hex-swatch::before {
+   content: "";
+   position: absolute;
+   inset: 0;
    background-color: var(--pqc-_surface);
    background-image:
       linear-gradient(45deg, var(--pqc-_checker) 25%, transparent 25%, transparent 75%, var(--pqc-_checker) 75%),

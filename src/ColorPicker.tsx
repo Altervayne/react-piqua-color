@@ -25,6 +25,27 @@ declare global {
 type ColorMode = 'hex' | 'rgb' | 'hsl' | 'cmyk'
 const MODES: ColorMode[] = ['hex', 'rgb', 'hsl', 'cmyk']
 
+// Join a base class with any truthy extras.
+const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ')
+
+/** Extra classes for individual parts, added alongside each part's built-in `pqc-*` class. */
+export interface ColorPickerClassNames {
+   svSquare?: string
+   svThumb?: string
+   hueBar?: string
+   hueThumb?: string
+   alphaBar?: string
+   alphaThumb?: string
+   tabList?: string
+   /** Every tab. */
+   tab?: string
+   /** The active tab, in addition to `tab`. */
+   tabActive?: string
+   slider?: string
+   sliderThumb?: string
+   swatch?: string
+}
+
 export interface ColorPickerProps {
    /** Current color. `#rrggbb`, or `#rrggbbaa` when `alpha` is on. Fully controlled. */
    value: string
@@ -48,6 +69,8 @@ export interface ColorPickerProps {
    className?: string
    /** Merged onto the root element's inline style — handy for setting `--pqc-*` tokens. */
    style?: CSSProperties
+   /** Extra classes for individual parts (SV square, thumbs, tabs, sliders, swatches…). */
+   classNames?: ColorPickerClassNames
 }
 
 export function ColorPicker({
@@ -62,6 +85,7 @@ export function ColorPicker({
    swatchesPosition = 'bottom',
    className,
    style,
+   classNames,
 }: ColorPickerProps) {
    const [mode, setMode] = useState<ColorMode>('hex')
 
@@ -371,6 +395,9 @@ export function ColorPicker({
       }).catch(() => { /* clipboard blocked — no feedback */ })
    }
 
+   // Every channel slider shares the same part-level classes; spread onto each row.
+   const rowSlots = { sliderClassName: classNames?.slider, sliderThumbClassName: classNames?.sliderThumb }
+
    // The swatches + recents rows move as one block; `swatchesPosition` places it
    // above or below the picker body. Reordered in the DOM (not CSS) so reading
    // and focus order follow the visual order.
@@ -381,7 +408,7 @@ export function ColorPicker({
                <span className="pqc-swatches-label" id={`${tabsId}-swatches-label`}>{swatchesLabel}</span>
                <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-swatches-label`}>
                   {swatches.map((color, index) => (
-                     <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={selectSwatch} />
+                     <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={selectSwatch} className={classNames?.swatch} />
                   ))}
                </div>
             </div>
@@ -392,7 +419,7 @@ export function ColorPicker({
                <span className="pqc-swatches-label" id={`${tabsId}-recent-label`}>{recentLabel}</span>
                <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-recent-label`}>
                   {recentColors.map((color, index) => (
-                     <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={selectSwatch} />
+                     <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={selectSwatch} className={classNames?.swatch} />
                   ))}
                </div>
             </div>
@@ -401,7 +428,7 @@ export function ColorPicker({
    )
 
    return (
-      <div className={`pqc-root${className ? ` ${className}` : ''}`} style={style}>
+      <div className={`pqc-root${className ? ` ${className}` : ''}`} style={{ ...style, ['--pqc-_hue' as string]: pureHue } as CSSProperties}>
 
          {swatchesPosition === 'top' && swatchesBlock}
 
@@ -411,10 +438,7 @@ export function ColorPicker({
          {/* ========== */}
          <div
             ref={svRef}
-            className="pqc-sv"
-            style={{
-               background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${pureHue})`,
-            }}
+            className={cx('pqc-sv', classNames?.svSquare)}
             role="slider"
             tabIndex={0}
             aria-label="Saturation and brightness"
@@ -426,8 +450,8 @@ export function ColorPicker({
             onBlur={commit}
          >
             <div
-               className="pqc-sv-thumb"
-               style={{ left: `${hsvSaturation}%`, top: `${100 - hsvValue}%` }}
+               className={cx('pqc-sv-thumb', classNames?.svThumb)}
+               style={{ ['--pqc-_x' as string]: `${hsvSaturation}%`, ['--pqc-_y' as string]: `${100 - hsvValue}%` } as CSSProperties}
             />
          </div>
 
@@ -436,8 +460,7 @@ export function ColorPicker({
          {/* ======== */}
          <div
             ref={hueRef}
-            className="pqc-hue"
-            style={{ background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)' }}
+            className={cx('pqc-hue', classNames?.hueBar)}
             role="slider"
             tabIndex={0}
             aria-label="Hue"
@@ -452,8 +475,8 @@ export function ColorPicker({
             onBlur={commit}
          >
             <div
-               className="pqc-hue-thumb"
-               style={{ left: `${(stickyHsvHue.current / 360) * 100}%`, background: pureHue }}
+               className={cx('pqc-hue-thumb', classNames?.hueThumb)}
+               style={{ ['--pqc-_x' as string]: `${(stickyHsvHue.current / 360) * 100}%` } as CSSProperties}
             />
          </div>
 
@@ -463,7 +486,7 @@ export function ColorPicker({
          {alphaEnabled && (
             <div
                ref={alphaBarRef}
-               className="pqc-alpha"
+               className={cx('pqc-alpha', classNames?.alphaBar)}
                role="slider"
                tabIndex={0}
                aria-label="Opacity"
@@ -479,16 +502,16 @@ export function ColorPicker({
             >
                <div
                   className="pqc-alpha-fill"
-                  style={{ background: `linear-gradient(to right, rgba(${red},${green},${blue},0), rgb(${red},${green},${blue}))` }}
+                  style={{ ['--pqc-_rgb' as string]: `${red} ${green} ${blue}` } as CSSProperties}
                />
-               <div className="pqc-alpha-thumb" style={{ left: `${alphaPercent}%` }} />
+               <div className={cx('pqc-alpha-thumb', classNames?.alphaThumb)} style={{ ['--pqc-_x' as string]: `${alphaPercent}%` } as CSSProperties} />
             </div>
          )}
 
          {/* ========== */}
          {/*  Mode tabs */}
          {/* ========== */}
-         <div className="pqc-tabs" role="tablist" aria-label="Color format">
+         <div className={cx('pqc-tabs', classNames?.tabList)} role="tablist" aria-label="Color format">
             {MODES.map(colorMode => (
                <button
                   key={colorMode}
@@ -501,7 +524,7 @@ export function ColorPicker({
                   tabIndex={mode === colorMode ? 0 : -1}
                   onClick={() => setMode(colorMode)}
                   onKeyDown={keyTabs}
-                  className={`pqc-tab${mode === colorMode ? ' pqc-tab--active' : ''}`}
+                  className={cx('pqc-tab', mode === colorMode && 'pqc-tab--active', classNames?.tab, mode === colorMode && classNames?.tabActive)}
                >
                   {colorMode}
                </button>
@@ -516,7 +539,7 @@ export function ColorPicker({
             {mode === 'hex' && (
                <div className="pqc-hex-row">
                   <div className="pqc-hex-swatch">
-                     <div className="pqc-hex-swatch-fill" style={{ background: currentHex }} />
+                     <div className="pqc-hex-swatch-fill" style={{ ['--pqc-_fill' as string]: currentHex } as CSSProperties} />
                   </div>
                   <div className="pqc-hex-field">
                      <span className="pqc-hex-hash">#</span>
@@ -579,13 +602,13 @@ export function ColorPicker({
 
             {mode === 'rgb' && (
                <>
-                  <ChannelRow label="R" ariaLabel="Red" labelColor="#e55" value={red} min={0} max={255} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="R" ariaLabel="Red" labelColor="#e55" value={red} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(0,${green},${blue}), rgb(255,${green},${blue}))`}
                      onChange={channelValue => emit([channelValue, green, blue])} />
-                  <ChannelRow label="G" ariaLabel="Green" labelColor="#5a5" value={green} min={0} max={255} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="G" ariaLabel="Green" labelColor="#5a5" value={green} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(${red},0,${blue}), rgb(${red},255,${blue}))`}
                      onChange={channelValue => emit([red, channelValue, blue])} />
-                  <ChannelRow label="B" ariaLabel="Blue" labelColor="#59f" value={blue} min={0} max={255} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="B" ariaLabel="Blue" labelColor="#59f" value={blue} min={0} max={255} onCommit={commit}
                      gradient={`linear-gradient(to right, rgb(${red},${green},0), rgb(${red},${green},255))`}
                      onChange={channelValue => emit([red, green, channelValue])} />
                </>
@@ -593,13 +616,13 @@ export function ColorPicker({
 
             {mode === 'hsl' && (
                <>
-                  <ChannelRow label="H" ariaLabel="Hue" labelColor="#aaa" value={stickyHslHue.current} min={0} max={360} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="H" ariaLabel="Hue" labelColor="#aaa" value={stickyHslHue.current} min={0} max={360} onCommit={commit}
                      gradient="linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)"
                      onChange={channelValue => { stickyHslHue.current = channelValue; emit(hslToRgb(channelValue, stickyHslSaturation.current, hslLightness), 'hsl') }} />
-                  <ChannelRow label="S" ariaLabel="Saturation" labelColor="#aaa" value={stickyHslSaturation.current} min={0} max={100} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="S" ariaLabel="Saturation" labelColor="#aaa" value={stickyHslSaturation.current} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, hsl(${stickyHslHue.current},0%,${hslLightness}%), hsl(${stickyHslHue.current},100%,${hslLightness}%))`}
                      onChange={channelValue => { stickyHslSaturation.current = channelValue; emit(hslToRgb(stickyHslHue.current, channelValue, hslLightness), 'hsl') }} />
-                  <ChannelRow label="L" ariaLabel="Lightness" labelColor="#aaa" value={hslLightness} min={0} max={100} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="L" ariaLabel="Lightness" labelColor="#aaa" value={hslLightness} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,0%), hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,50%), hsl(${stickyHslHue.current},${stickyHslSaturation.current}%,100%))`}
                      onChange={channelValue => emit(hslToRgb(stickyHslHue.current, stickyHslSaturation.current, channelValue), 'hsl')} />
                </>
@@ -607,16 +630,16 @@ export function ColorPicker({
 
             {mode === 'cmyk' && (
                <>
-                  <ChannelRow label="C" ariaLabel="Cyan" labelColor="#22c8d8" value={cyan} min={0} max={100} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="C" ariaLabel="Cyan" labelColor="#22c8d8" value={cyan} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(0,stickyCmykMagenta.current,stickyCmykYellow.current,black))}, ${rgbToHex(...cmykToRgb(100,stickyCmykMagenta.current,stickyCmykYellow.current,black))})`}
                      onChange={channelValue => { stickyCmykCyan.current = channelValue; emit(cmykToRgb(channelValue, stickyCmykMagenta.current, stickyCmykYellow.current, black), 'cmyk') }} />
-                  <ChannelRow label="M" ariaLabel="Magenta" labelColor="#e840a0" value={magenta} min={0} max={100} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="M" ariaLabel="Magenta" labelColor="#e840a0" value={magenta} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,0,stickyCmykYellow.current,black))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,100,stickyCmykYellow.current,black))})`}
                      onChange={channelValue => { stickyCmykMagenta.current = channelValue; emit(cmykToRgb(stickyCmykCyan.current, channelValue, stickyCmykYellow.current, black), 'cmyk') }} />
-                  <ChannelRow label="Y" ariaLabel="Yellow" labelColor="#c8b800" value={yellow} min={0} max={100} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="Y" ariaLabel="Yellow" labelColor="#c8b800" value={yellow} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,0,black))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,100,black))})`}
                      onChange={channelValue => { stickyCmykYellow.current = channelValue; emit(cmykToRgb(stickyCmykCyan.current, stickyCmykMagenta.current, channelValue, black), 'cmyk') }} />
-                  <ChannelRow label="K" ariaLabel="Black" labelColor="#888" value={black} min={0} max={100} onCommit={commit}
+                  <ChannelRow {...rowSlots} label="K" ariaLabel="Black" labelColor="#888" value={black} min={0} max={100} onCommit={commit}
                      gradient={`linear-gradient(to right, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,stickyCmykYellow.current,0))}, ${rgbToHex(...cmykToRgb(stickyCmykCyan.current,stickyCmykMagenta.current,stickyCmykYellow.current,100))})`}
                      onChange={channelValue => emit(cmykToRgb(stickyCmykCyan.current, stickyCmykMagenta.current, stickyCmykYellow.current, channelValue), 'cmyk')} />
                </>

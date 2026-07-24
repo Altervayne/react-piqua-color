@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, type CSSProperties } from 'react'
 
 export interface ChannelSliderProps {
    value:     number
@@ -10,12 +10,15 @@ export interface ChannelSliderProps {
    onChange:  (value: number) => void
    /** Discrete commit — fires on pointer-up (end of a drag) and on blur (end of a keyboard session). */
    onCommit?: () => void
+   /** Extra class on the track / thumb (part-level styling passthrough). */
+   className?:      string
+   thumbClassName?: string
 }
 
 const STEP = 1
 const STEP_LARGE = 10
 
-export function ChannelSlider({ value, min, max, gradient, ariaLabel, onChange, onCommit }: ChannelSliderProps) {
+export function ChannelSlider({ value, min, max, gradient, ariaLabel, onChange, onCommit, className, thumbClassName }: ChannelSliderProps) {
    const trackRef = useRef<HTMLDivElement>(null)
 
    function pick(event: React.PointerEvent<HTMLDivElement>) {
@@ -49,8 +52,8 @@ export function ChannelSlider({ value, min, max, gradient, ariaLabel, onChange, 
    return (
       <div
          ref={trackRef}
-         className="pqc-slider"
-         style={{ background: gradient }}
+         className={className ? `pqc-slider ${className}` : 'pqc-slider'}
+         style={{ ['--pqc-_grad' as string]: gradient } as CSSProperties}
          role="slider"
          tabIndex={0}
          aria-label={ariaLabel}
@@ -63,7 +66,7 @@ export function ChannelSlider({ value, min, max, gradient, ariaLabel, onChange, 
          onPointerUp={() => onCommit?.()}
          onBlur={() => onCommit?.()}
       >
-         <div className="pqc-slider-thumb" style={{ left: `${percent}%` }} />
+         <div className={thumbClassName ? `pqc-slider-thumb ${thumbClassName}` : 'pqc-slider-thumb'} style={{ ['--pqc-_x' as string]: `${percent}%` } as CSSProperties} />
       </div>
    )
 }

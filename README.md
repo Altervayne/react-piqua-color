@@ -8,6 +8,18 @@ hue stable through degenerate colors (black, white, gray) are baked in.
 Styling is fully self-contained via a single stylesheet driven by CSS custom
 properties, **no Tailwind, no CSS framework required**. Drop it into any React app.
 
+## Features
+
+- SV (saturation/value) square, hue bar, and an optional opacity bar
+- `hex` / `rgb` / `hsl` / `cmyk` modes, with a sticky hue that survives black,
+  white, and gray
+- Opt-in alpha: 8-digit hex plus an opacity slider
+- "Default colors" and "recents" rows, placeable above or below the picker
+- Eyedropper (where the browser supports it) and copy-to-clipboard
+- Fully keyboard operable and screen-reader labelled
+- CSS custom-property theming, a ready-made dark preset, and per-part class hooks
+- Fully controlled, zero runtime dependencies, TypeScript types included
+
 ## Install
 
 ```bash
@@ -67,6 +79,7 @@ caps, dedupes, and persists **nothing**; that is entirely the consumer's job.
 | `swatchesPosition` | `'top' \| 'bottom'`         | no       | Place the swatches + recents block above or below the picker body. Default `'bottom'`.       |
 | `className`        | `string`                    | no       | Appended to the root's class, alongside `pqc-root`.                                          |
 | `style`            | `React.CSSProperties`       | no       | Merged onto the root's inline style, handy for setting `--pqc-*` tokens inline.              |
+| `classNames`       | `ColorPickerClassNames`     | no       | Extra classes for individual parts (see [Part-level classes](#part-level-classes)).          |
 
 ## Alpha / opacity
 
@@ -94,6 +107,22 @@ Beside the hex field are a **copy** button and, where the browser supports the
 [EyeDropper API](https://developer.mozilla.org/docs/Web/API/EyeDropper), an
 **eyedropper** to pick a color from anywhere on screen. The eyedropper button is
 feature-detected and simply absent where unsupported (e.g. Firefox).
+
+## Accessibility
+
+Every control is keyboard operable and labelled for assistive tech:
+
+| Control | Keys |
+| --- | --- |
+| SV square | Arrow keys move saturation (←→) and brightness (↑↓); Shift for a ×10 step; Home / End set saturation to 0 / 100 |
+| Hue bar, opacity bar, channel sliders | Arrows adjust by 1; Shift+Arrow / PageUp / PageDown by 10; Home / End jump to the ends |
+| Mode tabs | Left / Right / Home / End move between `hex` / `rgb` / `hsl` / `cmyk` |
+
+Sliders expose `role="slider"` with live `aria-valuetext` (percentages, degrees),
+the tabs are a proper `role="tablist"`, and the swatch rows are labelled groups.
+Focus rings appear for keyboard users only. Continuous edits fire `onChange`; the
+discrete `onColorCommitted` fires once when a control is released or left (handy for
+a recents list).
 
 ## Theming
 
@@ -147,6 +176,24 @@ Fine-tune by overriding individual tokens after the class, e.g.
 Genuinely dynamic values (the SV/hue gradients, thumb positions, and per-channel
 slider gradients) are computed and applied as inline styles, so they are not
 themeable via CSS (they reflect the live color).
+
+### Part-level classes
+
+For structural tweaks beyond the tokens, `classNames` adds a class to an individual
+part, alongside its built-in `pqc-*` class:
+
+```tsx
+<ColorPicker
+   value={color}
+   onChange={setColor}
+   classNames={{ swatch: 'rounded-full', tabActive: 'my-active-tab' }}
+/>
+```
+
+Keys: `svSquare`, `svThumb`, `hueBar`, `hueThumb`, `alphaBar`, `alphaThumb`,
+`tabList`, `tab`, `tabActive` (added to the active tab, on top of `tab`), `slider`,
+`sliderThumb`, `swatch`. The dynamic inline styles above still win over your class
+for those specific properties (gradients, thumb positions).
 
 ## License
 

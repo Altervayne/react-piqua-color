@@ -13,9 +13,12 @@ export interface ChannelRowProps {
    onChange:   (value: number) => void
    /** Discrete commit — slider pointer-up / blur, or the number input's Enter/blur. */
    onCommit?:  () => void
+   /** Part-level classes forwarded to the slider track / thumb. */
+   sliderClassName?:      string
+   sliderThumbClassName?: string
 }
 
-export function ChannelRow({ label, labelColor, ariaLabel, value, min, max, gradient, onChange, onCommit }: ChannelRowProps) {
+export function ChannelRow({ label, labelColor, ariaLabel, value, min, max, gradient, onChange, onCommit, sliderClassName, sliderThumbClassName }: ChannelRowProps) {
    const [rawInput, setRawInput] = useState(String(value))
    // Mirror the committed numeric value back into the editable field.
    // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -33,7 +36,7 @@ export function ChannelRow({ label, labelColor, ariaLabel, value, min, max, grad
          <span className="pqc-channel-label" style={{ color: labelColor }} aria-hidden="true">
             {label}
          </span>
-         <ChannelSlider value={value} min={min} max={max} gradient={gradient} ariaLabel={ariaLabel} onChange={onChange} onCommit={onCommit} />
+         <ChannelSlider value={value} min={min} max={max} gradient={gradient} ariaLabel={ariaLabel} onChange={onChange} onCommit={onCommit} className={sliderClassName} thumbClassName={sliderThumbClassName} />
          <input
             type="text"
             inputMode="numeric"

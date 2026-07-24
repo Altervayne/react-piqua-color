@@ -147,6 +147,30 @@ describe('ColorPicker — alpha', () => {
    })
 })
 
+describe('ColorPicker — classNames slots', () => {
+   it('adds each slot class alongside the built-in pqc-* class', () => {
+      render(
+         <ColorPicker
+            value="#3b82f6"
+            onChange={() => {}}
+            alpha
+            swatches={['#000000']}
+            classNames={{ svSquare: 'x-sv', hueBar: 'x-hue', alphaBar: 'x-alpha', tab: 'x-tab', tabActive: 'x-active', slider: 'x-slider', swatch: 'x-sw' }}
+         />,
+      )
+      expect(document.querySelector('.pqc-sv.x-sv')).toBeTruthy()
+      expect(document.querySelector('.pqc-hue.x-hue')).toBeTruthy()
+      expect(document.querySelector('.pqc-alpha.x-alpha')).toBeTruthy()
+      expect(document.querySelectorAll('.pqc-tab.x-tab').length).toBe(4)          // every tab
+      expect(document.querySelector('.pqc-tab--active.x-active')).toBeTruthy()    // active tab only
+      expect(document.querySelector('.pqc-swatch.x-sw')).toBeTruthy()
+
+      // Sliders live in the rgb/hsl/cmyk panels.
+      fireEvent.click(screen.getByRole('tab', { name: 'rgb' }))
+      expect(document.querySelectorAll('.pqc-slider.x-slider').length).toBe(3)
+   })
+})
+
 describe('ColorPicker — copy & eyedropper', () => {
    function Host({ initial = '#000000' }: { initial?: string }) {
       const [color, setColor] = useState(initial)

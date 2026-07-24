@@ -64,6 +64,9 @@
    overflow: hidden;
    cursor: crosshair;
    touch-action: none;
+   /* Composition lives here; the live hue arrives as the --pqc-_hue scalar. */
+   background: linear-gradient(to bottom, transparent, #000),
+               linear-gradient(to right, #fff, var(--pqc-_hue));
 }
 
 /* Keyboard focus rings — the interactive surfaces are divs, so nothing draws
@@ -83,6 +86,8 @@
 
 .pqc-sv-thumb {
    position: absolute;
+   left: var(--pqc-_x);
+   top: var(--pqc-_y);
    width: var(--pqc-_thumb-size);
    height: var(--pqc-_thumb-size);
    transform: translate(-50%, -50%);
@@ -102,10 +107,13 @@
    border-radius: 9999px;
    cursor: pointer;
    touch-action: none;
+   /* The rainbow is constant, so it belongs here rather than inline. */
+   background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
 }
 
 .pqc-hue-thumb {
    position: absolute;
+   left: var(--pqc-_x);
    top: 50%;
    /* Slightly larger than the SV/slider thumbs, tracking the thumb-size token. */
    width: calc(var(--pqc-_thumb-size) + 0.125rem);
@@ -114,6 +122,7 @@
    border-radius: 9999px;
    border: 2px solid var(--pqc-_thumb-ring);
    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+   background: var(--pqc-_hue);
    pointer-events: none;
 }
 
@@ -149,10 +158,13 @@
    inset: 0;
    border-radius: inherit;
    pointer-events: none;
+   /* Transparent → opaque of the live color (supplied as space-separated rgb). */
+   background: linear-gradient(to right, rgb(var(--pqc-_rgb) / 0), rgb(var(--pqc-_rgb)));
 }
 
 .pqc-alpha-thumb {
    position: absolute;
+   left: var(--pqc-_x);
    top: 50%;
    width: calc(var(--pqc-_thumb-size) + 0.125rem);
    height: calc(var(--pqc-_thumb-size) + 0.125rem);
@@ -233,6 +245,7 @@
    position: absolute;
    inset: 0;
    border-radius: inherit;
+   background: var(--pqc-_fill);
 }
 
 .pqc-hex-opacity {
@@ -336,10 +349,13 @@
    border-radius: 9999px;
    cursor: pointer;
    touch-action: none;
+   /* The per-channel gradient arrives as a scalar var. */
+   background: var(--pqc-_grad);
 }
 
 .pqc-slider-thumb {
    position: absolute;
+   left: var(--pqc-_x);
    top: 50%;
    width: var(--pqc-_thumb-size);
    height: var(--pqc-_thumb-size);
@@ -391,6 +407,7 @@
    position: absolute;
    inset: 0;
    border-radius: inherit;
+   background: var(--pqc-_fill);
 }
 
 .pqc-swatch:hover {

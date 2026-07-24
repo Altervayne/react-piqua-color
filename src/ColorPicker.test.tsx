@@ -206,3 +206,43 @@ describe('ColorPicker — copy & eyedropper', () => {
       expect(screen.queryByLabelText('Pick a color from the screen')).toBeNull()
    })
 })
+
+describe('ColorPicker — onColorCommitted source', () => {
+   it('tags each commit with the interaction that produced it', async () => {
+      class FakeEyeDropper { open() { return Promise.resolve({ sRGBHex: '#00ff00' }) } }
+      window.EyeDropper = FakeEyeDropper
+      const onCommit = vi.fn()
+      render(
+         <ColorPicker value="#3b82f6" onChange={() => {}} onColorCommitted={onCommit}
+            swatches={['#000000']} recentColors={['#ffffff']} />,
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: '#000000' }))
+      expect(onCommit).toHaveBeenLastCalledWith('#000000', 'swatch')
+
+      fireEvent.click(screen.getByRole('button', { name: '#ffffff' }))
+      expect(onCommit).toHaveBeenLastCalledWith('#ffffff', 'recent')
+
+      const hex = screen.getByPlaceholderText('rrggbb')
+      fireEvent.change(hex, { target: { value: '112233' } })
+      fireEvent.blur(hex)
+      expect(onCommit).toHaveBeenLastCalledWith('#112233', 'input')
+
+      fireEvent.click(await screen.findByLabelText('Pick a color from the screen'))
+      await waitFor(() => expect(onCommit).toHaveBeenLastCalledWith('#00ff00', 'eyedropper'))
+
+      // Channel sliders vs their number boxes.
+      fireEvent.click(screen.getByRole('tab', { name: 'rgb' }))
+      const redSlider = screen.getByRole('slider', { name: 'Red' })
+      fireEvent.keyDown(redSlider, { key: 'ArrowRight' })
+      fireEvent.blur(redSlider)
+      expect(onCommit).toHaveBeenLastCalledWith(expect.any(String), 'slider')
+
+      const redInput = screen.getByRole('textbox', { name: 'Red' })
+      fireEvent.change(redInput, { target: { value: '10' } })
+      fireEvent.blur(redInput)
+      expect(onCommit).toHaveBeenLastCalledWith(expect.any(String), 'input')
+
+      delete window.EyeDropper
+   })
+})

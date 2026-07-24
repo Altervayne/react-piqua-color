@@ -253,6 +253,9 @@
    font-size: var(--pqc-_font-size);
    color: var(--pqc-_muted);
    flex-shrink: 0;
+   /* Reserve room for "100%" and right-align so the value never shifts layout. */
+   min-width: 2.5rem;
+   text-align: right;
 }
 
 /* Eyedropper / copy icon buttons in the hex row. */

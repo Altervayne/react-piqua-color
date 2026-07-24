@@ -18,6 +18,7 @@ function App() {
    const [dark, setDark] = useState(false)
    const [swatchesTop, setSwatchesTop] = useState(false)
    const [alpha, setAlpha] = useState(false)
+   const [lastSource, setLastSource] = useState('—')
    const [r, g, b] = hexToRgb(color)
 
    return (
@@ -48,9 +49,10 @@ function App() {
                      swatches={SWATCHES}
                      recentColors={recents}
                      swatchesPosition={swatchesTop ? 'top' : 'bottom'}
-                     onColorCommitted={committed =>
+                     onColorCommitted={(committed, source) => {
                         setRecents(previous => [committed, ...previous.filter(entry => entry !== committed)].slice(0, 12))
-                     }
+                        setLastSource(source)
+                     }}
                   />
                </div>
 
@@ -60,6 +62,7 @@ function App() {
                      <dt>hex</dt><dd>{color}</dd>
                      <dt>rgb</dt><dd>{r}, {g}, {b}</dd>
                      <dt>recents</dt><dd>{recents.length}</dd>
+                     <dt>committed via</dt><dd>{lastSource}</dd>
                   </dl>
                   <p className="demo-hint">
                      Tab to any control, then arrows / shift+arrows / home / end.
@@ -72,7 +75,11 @@ function App() {
    )
 }
 
-createRoot(document.getElementById('root')!).render(
+// Reuse the root across HMR re-executions of this entry, so editing the demo
+// doesn't warn about calling createRoot() twice on the same container.
+const container = document.getElementById('root')! as HTMLElement & { _root?: ReturnType<typeof createRoot> }
+container._root ??= createRoot(container)
+container._root.render(
    <StrictMode>
       <App />
    </StrictMode>,

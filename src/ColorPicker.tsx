@@ -25,6 +25,16 @@ declare global {
 type ColorMode = 'hex' | 'rgb' | 'hsl' | 'cmyk'
 const MODES: ColorMode[] = ['hex', 'rgb', 'hsl', 'cmyk']
 
+/**
+ * What triggered an `onColorCommitted` call, so a consumer can react differently
+ * per interaction (e.g. close the picker only on a `'swatch'` click).
+ * - `'swatch'` / `'recent'` — a click in the default-colors / recents row
+ * - `'input'` — a value typed into the hex field or a channel number box
+ * - `'slider'` — a drag or keypress on the SV square, hue / opacity bar, or a channel slider
+ * - `'eyedropper'` — a color picked with the screen eyedropper
+ */
+export type CommitSource = 'swatch' | 'recent' | 'input' | 'slider' | 'eyedropper'
+
 // Join a base class with any truthy extras.
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ')
 
@@ -57,8 +67,8 @@ export interface ColorPickerProps {
    swatches?: string[]
    /** Recents row. Clickable display only; omit to hide the row. */
    recentColors?: string[]
-   /** Discrete commit — swatch click, hex completed, slider pointer-up. */
-   onColorCommitted?: (hex: string) => void
+   /** Discrete commit (swatch click, completed hex, slider release). `source` says which. */
+   onColorCommitted?: (hex: string, source: CommitSource) => void
    /** Label above the `swatches` row. */
    swatchesLabel?: string
    /** Label above the `recentColors` row. */
@@ -198,14 +208,14 @@ export function ColorPicker({
       onChange(hex)
    }, [alphaEnabled, onChange, syncHsvHue, syncHsl, syncCmyk])
 
-   // Discrete commit of the last-emitted color.
-   const commit = useCallback(() => {
-      onColorCommitted?.(emittedHex.current)
+   // Discrete commit of the last-emitted color, tagged with what triggered it.
+   const commit = useCallback((source: CommitSource) => {
+      onColorCommitted?.(emittedHex.current, source)
    }, [onColorCommitted])
 
    // Swatch / recent click: apply the color (state + sticky refs + alpha) then
    // commit. A 6-digit swatch is fully opaque; an 8-digit one applies its alpha.
-   const selectSwatch = useCallback((color: string) => {
+   const selectSwatch = useCallback((color: string, source: 'swatch' | 'recent') => {
       const parsed = hexToRgba(color)
       if (!parsed) return
       const [pr, pg, pb, pa] = parsed
@@ -216,7 +226,7 @@ export function ColorPicker({
       if (alphaEnabled) setAlpha(pa)
       updateStickyRefs(newRgb)
       onChange(hex)
-      onColorCommitted?.(hex)
+      onColorCommitted?.(hex, source)
    }, [alphaEnabled, onChange, onColorCommitted, updateStickyRefs])
 
    // ====================
@@ -354,7 +364,7 @@ export function ColorPicker({
       const parsed = hexToRgba('#' + raw)
       if (!parsed) return false
       emit([parsed[0], parsed[1], parsed[2]], null, parsed[3])
-      if (recents) onColorCommitted?.(emittedHex.current)
+      if (recents) onColorCommitted?.(emittedHex.current, 'input')
       return true
    }
 
@@ -375,7 +385,7 @@ export function ColorPicker({
          if (parsed) {
             // Screen-picked colors are opaque; keep the user's current opacity.
             emit([parsed[0], parsed[1], parsed[2]], null, alphaRef.current)
-            onColorCommitted?.(emittedHex.current)
+            onColorCommitted?.(emittedHex.current, 'eyedropper')
          }
       } catch {
          // The user dismissed the picker (Esc) — nothing to do.
@@ -408,7 +418,7 @@ export function ColorPicker({
                <span className="pqc-swatches-label" id={`${tabsId}-swatches-label`}>{swatchesLabel}</span>
                <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-swatches-label`}>
                   {swatches.map((color, index) => (
-                     <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={selectSwatch} className={classNames?.swatch} />
+                     <SwatchButton key={`swatch-${index}-${color}`} color={color} onSelect={c => selectSwatch(c, 'swatch')} className={classNames?.swatch} />
                   ))}
                </div>
             </div>
@@ -419,7 +429,7 @@ export function ColorPicker({
                <span className="pqc-swatches-label" id={`${tabsId}-recent-label`}>{recentLabel}</span>
                <div className="pqc-swatch-grid" role="group" aria-labelledby={`${tabsId}-recent-label`}>
                   {recentColors.map((color, index) => (
-                     <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={selectSwatch} className={classNames?.swatch} />
+                     <SwatchButton key={`recent-${index}-${color}`} color={color} onSelect={c => selectSwatch(c, 'recent')} className={classNames?.swatch} />
                   ))}
                </div>
             </div>
@@ -446,8 +456,8 @@ export function ColorPicker({
             onKeyDown={keySV}
             onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pickSV(event) }}
             onPointerMove={event => { if (event.buttons === 0) return; pickSV(event) }}
-            onPointerUp={commit}
-            onBlur={commit}
+            onPointerUp={() => commit('slider')}
+            onBlur={() => commit('slider')}
          >
             <div
                className={cx('pqc-sv-thumb', classNames?.svThumb)}
@@ -471,8 +481,8 @@ export function ColorPicker({
             onKeyDown={keyHue}
             onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pickHue(event) }}
             onPointerMove={event => { if (event.buttons === 0) return; pickHue(event) }}
-            onPointerUp={commit}
-            onBlur={commit}
+            onPointerUp={() => commit('slider')}
+            onBlur={() => commit('slider')}
          >
             <div
                className={cx('pqc-hue-thumb', classNames?.hueThumb)}
@@ -497,8 +507,8 @@ export function ColorPicker({
                onKeyDown={keyAlpha}
                onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pickAlpha(event) }}
                onPointerMove={event => { if (event.buttons === 0) return; pickAlpha(event) }}
-               onPointerUp={commit}
-               onBlur={commit}
+               onPointerUp={() => commit('slider')}
+               onBlur={() => commit('slider')}
             >
                <div
                   className="pqc-alpha-fill"
@@ -573,7 +583,7 @@ export function ColorPicker({
                         className="pqc-hex-input"
                         placeholder={alphaEnabled ? 'rrggbbaa' : 'rrggbb'}
                      />
-                     {alphaEnabled && alphaPercent < 100 && (
+                     {alphaEnabled && (
                         <span className="pqc-hex-opacity" aria-hidden="true">{alphaPercent}%</span>
                      )}
                   </div>

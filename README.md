@@ -1,5 +1,7 @@
 # react-piqua-color
 
+**[▶ Try the live demo](https://altervayne.github.io/react-piqua-color/)**
+
 A portable, fully controlled React color picker. It renders an SV (saturation/value)
 square, a hue bar, segmented mode tabs, and labelled channel sliders for
 **hex / rgb / hsl / cmyk**. All the color math and the sticky-hue behaviour that keeps
@@ -7,6 +9,11 @@ hue stable through degenerate colors (black, white, gray) are baked in.
 
 Styling is fully self-contained via a single stylesheet driven by CSS custom
 properties, **no Tailwind, no CSS framework required**. Drop it into any React app.
+
+<p align="center">
+  <img src="assets/preview-light.png" alt="react-piqua-color in light mode" width="320" />
+  <img src="assets/preview-dark.png" alt="react-piqua-color in dark mode" width="320" />
+</p>
 
 ## Features
 
@@ -71,7 +78,7 @@ caps, dedupes, and persists **nothing**; that is entirely the consumer's job.
 | `value`            | `string`                    | yes      | Current color as `#rrggbb`, or `#rrggbbaa` when `alpha` is on. Fully controlled.             |
 | `onChange`         | `(hex: string) => void`     | yes      | Live change, fires continuously during slider drag and hex typing. Same width as `value`.    |
 | `alpha`            | `boolean`                   | no       | Enable the opacity channel: adds an alpha slider and widens hex to 8 digits. Default `false`.|
-| `onColorCommitted` | `(hex: string) => void`     | no       | Discrete commit: swatch click, a completed hex, and slider pointer-up.                       |
+| `onColorCommitted` | `(hex, source) => void`     | no       | Discrete commit; `source` says which interaction (see [Commit source](#commit-source)).      |
 | `swatches`         | `string[]`                  | no       | "Default colors" row. Clickable display only; omit to hide the row.                         |
 | `recentColors`     | `string[]`                  | no       | Recents row. Clickable display only; omit to hide the row.                                  |
 | `swatchesLabel`    | `string`                    | no       | Label above the swatches row. Default `"Default colors"`.                                   |
@@ -80,6 +87,35 @@ caps, dedupes, and persists **nothing**; that is entirely the consumer's job.
 | `className`        | `string`                    | no       | Appended to the root's class, alongside `pqc-root`.                                          |
 | `style`            | `React.CSSProperties`       | no       | Merged onto the root's inline style, handy for setting `--pqc-*` tokens inline.              |
 | `classNames`       | `ColorPickerClassNames`     | no       | Extra classes for individual parts (see [Part-level classes](#part-level-classes)).          |
+
+## Commit source
+
+`onColorCommitted` receives the source of the change as its second argument, so you
+can react differently per interaction, for example closing a popover only when a
+swatch is clicked:
+
+```tsx
+<ColorPicker
+   value={color}
+   onChange={setColor}
+   onColorCommitted={(hex, source) => {
+      addToRecents(hex)
+      if (source === 'swatch') closePicker()
+   }}
+/>
+```
+
+`source` is one of:
+
+| Value | Interaction |
+| --- | --- |
+| `'swatch'` | A click in the "Default colors" row |
+| `'recent'` | A click in the recents row |
+| `'input'` | A value typed into the hex field or a channel number box |
+| `'slider'` | A drag or keypress on the SV square, hue / opacity bar, or a channel slider |
+| `'eyedropper'` | A color picked with the screen eyedropper |
+
+The `CommitSource` union type is exported for your handlers.
 
 ## Alpha / opacity
 

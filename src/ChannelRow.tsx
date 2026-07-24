@@ -11,8 +11,8 @@ export interface ChannelRowProps {
    max:        number
    gradient:   string
    onChange:   (value: number) => void
-   /** Discrete commit — slider pointer-up / blur, or the number input's Enter/blur. */
-   onCommit?:  () => void
+   /** Discrete commit. `'slider'` = drag/keypress on the track; `'input'` = the number box. */
+   onCommit?:  (source: 'slider' | 'input') => void
    /** Part-level classes forwarded to the slider track / thumb. */
    sliderClassName?:      string
    sliderThumbClassName?: string
@@ -28,7 +28,7 @@ export function ChannelRow({ label, labelColor, ariaLabel, value, min, max, grad
       const parsedValue = parseInt(rawValue, 10)
       if (!isNaN(parsedValue)) onChange(Math.max(min, Math.min(max, parsedValue)))
       setRawInput(String(value))
-      onCommit?.()
+      onCommit?.('input')
    }
 
    return (
@@ -36,7 +36,7 @@ export function ChannelRow({ label, labelColor, ariaLabel, value, min, max, grad
          <span className="pqc-channel-label" style={{ color: labelColor }} aria-hidden="true">
             {label}
          </span>
-         <ChannelSlider value={value} min={min} max={max} gradient={gradient} ariaLabel={ariaLabel} onChange={onChange} onCommit={onCommit} className={sliderClassName} thumbClassName={sliderThumbClassName} />
+         <ChannelSlider value={value} min={min} max={max} gradient={gradient} ariaLabel={ariaLabel} onChange={onChange} onCommit={() => onCommit?.('slider')} className={sliderClassName} thumbClassName={sliderThumbClassName} />
          <input
             type="text"
             inputMode="numeric"

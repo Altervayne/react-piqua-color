@@ -8,7 +8,9 @@ import { dirname, resolve } from 'node:path'
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+   // Served at the repo-named subpath on GitHub Pages; root during local dev.
+   base: command === 'build' ? '/react-piqua-color/' : '/',
    plugins: [react()],
    // Consume the library exactly as an app would, but resolved to source for HMR.
    resolve: {
@@ -18,4 +20,4 @@ export default defineConfig({
       },
    },
    server: { fs: { allow: [root] } },
-})
+}))

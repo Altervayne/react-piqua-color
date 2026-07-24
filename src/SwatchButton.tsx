@@ -24,7 +24,8 @@ export function SwatchButton({ color, onSelect, className, selected }: SwatchBut
          aria-current={selected || undefined}
          onClick={() => onSelect(color)}
       >
-         {/* Fill sits over the checkerboard base so a color with alpha reads as transparent. */}
+         {/* Checkerboard, then the fill on top, both clipped to the button's shape. */}
+         <span className="pqc-swatch-checker" />
          <span className="pqc-swatch-fill" style={{ ['--pqc-_fill' as string]: color } as CSSProperties} />
       </button>
    )

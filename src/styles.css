@@ -145,12 +145,12 @@
    background-position: 0 0, 4px 4px;
 }
 
-/* The swatch + hex preview draw the checkerboard as a real child box (::before)
-   rather than a background, so the parent's overflow:hidden clips it to any custom
-   rounding. A background-image would only clip via border-radius, escaping overflow. */
-.pqc-swatch::before,
-.pqc-hex-swatch::before {
-   content: "";
+/* The swatch + hex preview draw the checkerboard as a real child element the same
+   size as the fill. Both are clipped by the parent's overflow:hidden, so the button
+   alone decides the shape (border-radius included). A real element (not a ::before)
+   is immune to a consuming app's global pseudo-element resets. */
+.pqc-swatch-checker,
+.pqc-hex-swatch-checker {
    position: absolute;
    inset: 0;
    background-color: var(--pqc-_surface);

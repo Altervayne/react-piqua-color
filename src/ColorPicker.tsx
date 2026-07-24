@@ -559,6 +559,7 @@ export function ColorPicker({
             {mode === 'hex' && (
                <div className="pqc-hex-row">
                   <div className="pqc-hex-swatch">
+                     <div className="pqc-hex-swatch-checker" />
                      <div className="pqc-hex-swatch-fill" style={{ ['--pqc-_fill' as string]: currentHex } as CSSProperties} />
                   </div>
                   <div className="pqc-hex-field">

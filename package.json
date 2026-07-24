@@ -5,6 +5,14 @@
   "type": "module",
   "license": "MIT",
   "author": "Florian Douay",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Altervayne/react-piqua-color.git"
+  },
+  "homepage": "https://github.com/Altervayne/react-piqua-color#readme",
+  "bugs": {
+    "url": "https://github.com/Altervayne/react-piqua-color/issues"
+  },
   "sideEffects": [
     "**/*.css"
   ],

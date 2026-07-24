@@ -84,3 +84,65 @@ describe('ColorPicker — cross-mode sticky refs stay in step', () => {
       expect(currentColor()).toBe('#008080') // darkened cyan
    })
 })
+
+describe('ColorPicker — alpha', () => {
+   function ControlledAlpha({ initial = '#3b82f6' }: { initial?: string }) {
+      const [color, setColor] = useState(initial)
+      return (
+         <>
+            <ColorPicker value={color} onChange={setColor} alpha />
+            <output data-testid="color">{color}</output>
+         </>
+      )
+   }
+
+   it('shows no opacity slider by default', () => {
+      render(<Controlled />)
+      expect(screen.queryByRole('slider', { name: 'Opacity' })).toBeNull()
+      expect(screen.getByPlaceholderText('rrggbb')).toBeTruthy()
+   })
+
+   it('adds an opacity slider and widens the hex field when alpha is on', () => {
+      render(<ControlledAlpha />)
+      expect(screen.getByRole('slider', { name: 'Opacity' })).toBeTruthy()
+      const hex = screen.getByPlaceholderText('rrggbbaa') as HTMLInputElement
+      expect(hex.maxLength).toBe(8)
+   })
+
+   it('emits eight-digit hex from a typed eight-digit value', () => {
+      render(<ControlledAlpha />)
+      fireEvent.change(screen.getByPlaceholderText('rrggbbaa'), { target: { value: '11223380' } })
+      expect(currentColor()).toBe('#11223380')
+   })
+
+   it('reads a six-digit entry as fully opaque when alpha is on', () => {
+      render(<ControlledAlpha />)
+      fireEvent.change(screen.getByPlaceholderText('rrggbbaa'), { target: { value: 'ff0000' } })
+      expect(currentColor()).toBe('#ff0000ff')
+   })
+
+   it('drives opacity from the alpha slider — percent presented, byte emitted', () => {
+      render(<ControlledAlpha initial="#ff0000ff" />)
+      const opacity = screen.getByRole('slider', { name: 'Opacity' })
+      expect(opacity.getAttribute('aria-valuenow')).toBe('100')
+      fireEvent.keyDown(opacity, { key: 'Home' })      // → 0%
+      expect(opacity.getAttribute('aria-valuenow')).toBe('0')
+      expect(currentColor()).toBe('#ff000000')          // fully transparent red
+   })
+
+   it('expands 3-digit shorthand on blur (no alpha)', () => {
+      render(<Controlled />)
+      const hex = screen.getByPlaceholderText('rrggbb')
+      fireEvent.change(hex, { target: { value: 'f80' } })
+      fireEvent.blur(hex)
+      expect(currentColor()).toBe('#ff8800')
+   })
+
+   it('expands 3-digit shorthand on blur (alpha on)', () => {
+      render(<ControlledAlpha />)
+      const hex = screen.getByPlaceholderText('rrggbbaa')
+      fireEvent.change(hex, { target: { value: 'f80' } })
+      fireEvent.blur(hex)
+      expect(currentColor()).toBe('#ff8800ff')
+   })
+})

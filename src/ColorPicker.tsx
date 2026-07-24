@@ -9,7 +9,7 @@ import { useState, useRef, useEffect, useCallback, useId, type CSSProperties } f
 import { ChannelRow } from './ChannelRow'
 import { SwatchButton } from './SwatchButton'
 import {
-   hsvToRgb, rgbToHsv, rgbToHsl, hslToRgb, rgbToCmyk, cmykToRgb, hexToRgb, rgbToHex,
+   hsvToRgb, rgbToHsv, rgbToHsl, hslToRgb, rgbToCmyk, cmykToRgb, rgbToHex, hexToRgba, rgbaToHex,
 } from './color'
 
 // ##################
@@ -20,10 +20,12 @@ type ColorMode = 'hex' | 'rgb' | 'hsl' | 'cmyk'
 const MODES: ColorMode[] = ['hex', 'rgb', 'hsl', 'cmyk']
 
 export interface ColorPickerProps {
-   /** Current color, `#rrggbb`. Fully controlled. */
+   /** Current color. `#rrggbb`, or `#rrggbbaa` when `alpha` is on. Fully controlled. */
    value: string
-   /** Live change — fires continuously during slider drag / hex typing. */
+   /** Live change — fires continuously during slider drag / hex typing. Same width as `value`. */
    onChange: (hex: string) => void
+   /** Enable the opacity channel: adds an alpha slider and widens hex to 8 digits. Default `false`. */
+   alpha?: boolean
    /** "Default colors" row. Clickable display only; omit to hide the row. */
    swatches?: string[]
    /** Recents row. Clickable display only; omit to hide the row. */
@@ -45,6 +47,7 @@ export interface ColorPickerProps {
 export function ColorPicker({
    value,
    onChange,
+   alpha: alphaEnabled = false,
    swatches,
    recentColors,
    onColorCommitted,
@@ -62,7 +65,18 @@ export function ColorPicker({
    // Source of truth. Avoids the prop→hex→derive feedback loop that causes
    // degenerate color conversions (e.g. hsl(*, *, 100%) always → [0,0,100]).
    const emittedHex = useRef(value)
-   const [rgb, setRgb] = useState<[number, number, number]>(() => hexToRgb(value) ?? [249, 115, 22])
+   const [rgb, setRgb] = useState<[number, number, number]>(() => {
+      const parsed = hexToRgba(value)
+      return parsed ? [parsed[0], parsed[1], parsed[2]] : [249, 115, 22]
+   })
+
+   // Opacity, stored as the 0-255 byte (lossless with the hex AA byte). It rides
+   // alongside RGB and never enters the sticky-ref / conversion machinery — alpha
+   // is orthogonal to hue. `alphaRef` mirrors it so `emit` can read the current
+   // value without being recreated on every alpha-drag frame.
+   const [alpha, setAlpha] = useState<number>(() => hexToRgba(value)?.[3] ?? 255)
+   const alphaRef = useRef(alpha)
+   useEffect(() => { alphaRef.current = alpha }, [alpha])
 
    const [red, green, blue]     = rgb
    const [, hsvSaturation, hsvValue] = rgbToHsv(red, green, blue)
@@ -115,20 +129,22 @@ export function ColorPicker({
    }, [syncHsvHue, syncHsl, syncCmyk])
 
    // Only sync from external prop changes, not our own emissions.
-   // Also update sticky refs from the new external color.
+   // Also update sticky refs (and alpha) from the new external color.
    useEffect(() => {
       if (value !== emittedHex.current) {
-         const parsed = hexToRgb(value)
+         const parsed = hexToRgba(value)
          if (parsed) {
+            const [pr, pg, pb, pa] = parsed
             // Deliberate: pull the external controlled value into our RGB source
             // of truth. Guarded by the emittedHex check so our own emissions
             // don't loop back through here.
             // eslint-disable-next-line react-hooks/set-state-in-effect
-            setRgb(parsed)
-            updateStickyRefs(parsed)
+            setRgb([pr, pg, pb])
+            if (alphaEnabled) setAlpha(pa)
+            updateStickyRefs([pr, pg, pb])
          }
       }
-   }, [value, updateStickyRefs])
+   }, [value, alphaEnabled, updateStickyRefs])
 
    const pureHue = rgbToHex(...hsvToRgb(stickyHsvHue.current, 100, 100))
 
@@ -138,32 +154,40 @@ export function ColorPicker({
    // null means the color jumped wholesale (hex / RGB entry) so everything
    // resyncs. This keeps the non-edited modes — and the always-visible SV square
    // + hue bar — in step, instead of only refreshing on swatch / external change.
-   const emit = useCallback((newRgb: [number, number, number], owner: 'hsv' | 'hsl' | 'cmyk' | null = null) => {
-      const hex = rgbToHex(...newRgb)
+   // `nextAlpha` defaults to the current alpha (read via ref so alpha drags don't
+   // recreate this callback). The emitted hex carries the alpha byte only when the
+   // feature is on, so the no-alpha path stays byte-identical to before.
+   const emit = useCallback((newRgb: [number, number, number], owner: 'hsv' | 'hsl' | 'cmyk' | null = null, nextAlpha: number = alphaRef.current) => {
+      const hex = alphaEnabled ? rgbaToHex(...newRgb, nextAlpha) : rgbToHex(...newRgb)
       emittedHex.current = hex
       setRgb(newRgb)
+      if (nextAlpha !== alphaRef.current) setAlpha(nextAlpha)
       if (owner !== 'hsv')  syncHsvHue(newRgb)
       if (owner !== 'hsl')  syncHsl(newRgb)
       if (owner !== 'cmyk') syncCmyk(newRgb)
       onChange(hex)
-   }, [onChange, syncHsvHue, syncHsl, syncCmyk])
+   }, [alphaEnabled, onChange, syncHsvHue, syncHsl, syncCmyk])
 
    // Discrete commit of the last-emitted color.
    const commit = useCallback(() => {
       onColorCommitted?.(emittedHex.current)
    }, [onColorCommitted])
 
-   // Swatch / recent click: apply the color (state + sticky refs) then commit.
+   // Swatch / recent click: apply the color (state + sticky refs + alpha) then
+   // commit. A 6-digit swatch is fully opaque; an 8-digit one applies its alpha.
    const selectSwatch = useCallback((color: string) => {
-      const parsed = hexToRgb(color)
+      const parsed = hexToRgba(color)
       if (!parsed) return
-      const hex = rgbToHex(...parsed)
+      const [pr, pg, pb, pa] = parsed
+      const newRgb: [number, number, number] = [pr, pg, pb]
+      const hex = alphaEnabled ? rgbaToHex(pr, pg, pb, pa) : rgbToHex(pr, pg, pb)
       emittedHex.current = hex
-      setRgb(parsed)
-      updateStickyRefs(parsed)
+      setRgb(newRgb)
+      if (alphaEnabled) setAlpha(pa)
+      updateStickyRefs(newRgb)
       onChange(hex)
       onColorCommitted?.(hex)
-   }, [onChange, onColorCommitted, updateStickyRefs])
+   }, [alphaEnabled, onChange, onColorCommitted, updateStickyRefs])
 
    // ====================
    //  SV square & hue bar
@@ -225,6 +249,38 @@ export function ColorPicker({
    }
 
    // ==========
+   //  Alpha bar
+   // ==========
+   // Presented and driven in whole percent (0-100), stored as the 0-255 byte.
+   // An imported byte is preserved until the slider is touched; the color itself
+   // is unchanged, so this only moves the alpha byte.
+   const alphaBarRef = useRef<HTMLDivElement>(null)
+   const alphaPercent = Math.round((alpha / 255) * 100)
+
+   function pickAlpha(event: React.PointerEvent<HTMLDivElement>) {
+      const element = alphaBarRef.current; if (!element) return
+      const rect = element.getBoundingClientRect()
+      const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
+      emit(rgb, null, Math.round(ratio * 255))
+   }
+
+   function keyAlpha(event: React.KeyboardEvent<HTMLDivElement>) {
+      let percent = alphaPercent
+      switch (event.key) {
+         case 'ArrowRight': case 'ArrowUp':   percent += event.shiftKey ? 10 : 1; break
+         case 'ArrowLeft':  case 'ArrowDown': percent -= event.shiftKey ? 10 : 1; break
+         case 'PageUp':   percent += 10; break
+         case 'PageDown': percent -= 10; break
+         case 'Home':     percent = 0; break
+         case 'End':      percent = 100; break
+         default: return
+      }
+      event.preventDefault()
+      percent = Math.max(0, Math.min(100, percent))
+      emit(rgb, null, Math.round((percent / 100) * 255))
+   }
+
+   // ==========
    //  Mode tabs
    // ==========
    const tabsId = useId()
@@ -252,11 +308,25 @@ export function ColorPicker({
    // ==========
    //  Hex input
    // ==========
-   const currentHex = rgbToHex(red, green, blue)
+   const currentHex = alphaEnabled ? rgbaToHex(red, green, blue, alpha) : rgbToHex(red, green, blue)
    const [hexRaw, setHexRaw] = useState(currentHex.replace('#', ''))
-   // Keep the editable hex string in step with the live color from any source.
-   // eslint-disable-next-line react-hooks/set-state-in-effect
-   useEffect(() => { setHexRaw(currentHex.replace('#', '')) }, [currentHex])
+   // While the field is focused the user's typing is the source of truth — don't
+   // let the live color clobber a half-typed entry (e.g. auto-fill 6 → 8 chars).
+   const hexFocused = useRef(false)
+   useEffect(() => { if (!hexFocused.current) setHexRaw(currentHex.replace('#', '')) }, [currentHex])
+
+   // Parse a raw hex entry (shorthand included) and apply it. Complete lengths are
+   // 6 or (with alpha) 8; shorthand 3, or 4 with alpha. Returns whether it applied.
+   // `recents` gates onColorCommitted so it fires once on settle, not per keystroke.
+   function commitHex(raw: string, recents: boolean): boolean {
+      const lengths = alphaEnabled ? [3, 4, 6, 8] : [3, 6]
+      if (!lengths.includes(raw.length)) return false
+      const parsed = hexToRgba('#' + raw)
+      if (!parsed) return false
+      emit([parsed[0], parsed[1], parsed[2]], null, parsed[3])
+      if (recents) onColorCommitted?.(emittedHex.current)
+      return true
+   }
 
    // The swatches + recents rows move as one block; `swatchesPosition` places it
    // above or below the picker body. Reordered in the DOM (not CSS) so reading
@@ -344,6 +414,34 @@ export function ColorPicker({
             />
          </div>
 
+         {/* ========= */}
+         {/*  Alpha bar */}
+         {/* ========= */}
+         {alphaEnabled && (
+            <div
+               ref={alphaBarRef}
+               className="pqc-alpha"
+               role="slider"
+               tabIndex={0}
+               aria-label="Opacity"
+               aria-valuemin={0}
+               aria-valuemax={100}
+               aria-valuenow={alphaPercent}
+               aria-valuetext={`${alphaPercent}%`}
+               onKeyDown={keyAlpha}
+               onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pickAlpha(event) }}
+               onPointerMove={event => { if (event.buttons === 0) return; pickAlpha(event) }}
+               onPointerUp={commit}
+               onBlur={commit}
+            >
+               <div
+                  className="pqc-alpha-fill"
+                  style={{ background: `linear-gradient(to right, rgba(${red},${green},${blue},0), rgb(${red},${green},${blue}))` }}
+               />
+               <div className="pqc-alpha-thumb" style={{ left: `${alphaPercent}%` }} />
+            </div>
+         )}
+
          {/* ========== */}
          {/*  Mode tabs */}
          {/* ========== */}
@@ -374,34 +472,45 @@ export function ColorPicker({
 
             {mode === 'hex' && (
                <div className="pqc-hex-row">
-                  <div className="pqc-hex-swatch" style={{ background: currentHex }} />
+                  <div className="pqc-hex-swatch">
+                     <div className="pqc-hex-swatch-fill" style={{ background: currentHex }} />
+                  </div>
                   <div className="pqc-hex-field">
                      <span className="pqc-hex-hash">#</span>
                      <input
                         type="text"
                         value={hexRaw}
+                        onFocus={() => { hexFocused.current = true }}
                         onChange={event => {
                            const inputElement = event.target
-                           const cleaned = inputElement.value.replace(/[^0-9a-f]/gi, '').slice(0, 6)
+                           const cleaned = inputElement.value.replace(/[^0-9a-f]/gi, '').slice(0, alphaEnabled ? 8 : 6)
                            setHexRaw(cleaned)
-                           if (cleaned.length === 6) {
-                              const parsed = hexToRgb('#' + cleaned)
-                              if (parsed) {
-                                 emit(parsed)
-                                 // emit() -> onChange() may synchronously re-render and move DOM
-                                 // focus elsewhere (a controlled parent can steal it). Reclaim
-                                 // focus so the user can keep typing uninterrupted.
-                                 inputElement.focus()
-                                 onColorCommitted?.(rgbToHex(...parsed))
-                              }
+                           // Live color update at full lengths only — 6, or 8 with alpha (a
+                           // 6-digit entry reads as opaque). Shorthand waits for settle so
+                           // typing a long value never flickers through its 3-char prefix.
+                           if (cleaned.length === 6 || (alphaEnabled && cleaned.length === 8)) {
+                              commitHex(cleaned, false)
+                              // emit() may re-render and move focus (a controlled parent can
+                              // steal it). Reclaim so the user keeps typing uninterrupted.
+                              inputElement.focus()
                            }
                         }}
-                        maxLength={6}
+                        onKeyDown={event => { if (event.key === 'Enter') commitHex(hexRaw, true) }}
+                        onBlur={() => {
+                           hexFocused.current = false
+                           // Settle: expand shorthand / a 6-digit opaque entry and record it.
+                           commitHex(hexRaw, true)
+                           setHexRaw(currentHex.replace('#', ''))
+                        }}
+                        maxLength={alphaEnabled ? 8 : 6}
                         spellCheck={false}
                         className="pqc-hex-input"
-                        placeholder="rrggbb"
+                        placeholder={alphaEnabled ? 'rrggbbaa' : 'rrggbb'}
                      />
                   </div>
+                  {alphaEnabled && alphaPercent < 100 && (
+                     <span className="pqc-hex-opacity" aria-hidden="true">{alphaPercent}%</span>
+                  )}
                </div>
             )}
 

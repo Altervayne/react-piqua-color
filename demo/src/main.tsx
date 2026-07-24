@@ -7,7 +7,7 @@ import './demo.css'
 const SWATCHES = ['#f97316', '#ef4444', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#000000', '#ffffff']
 
 function hexToRgb(hex: string): [number, number, number] {
-   const n = parseInt(hex.slice(1), 16)
+   const n = parseInt(hex.slice(1, 7), 16) // ignore any trailing alpha byte
    return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
@@ -17,6 +17,7 @@ function App() {
    const [recents, setRecents] = useState<string[]>([])
    const [dark, setDark] = useState(false)
    const [swatchesTop, setSwatchesTop] = useState(false)
+   const [alpha, setAlpha] = useState(false)
    const [r, g, b] = hexToRgb(color)
 
    return (
@@ -25,6 +26,9 @@ function App() {
             <header className="demo-head">
                <h1>react-piqua-color</h1>
                <div className="demo-actions">
+                  <button type="button" className="demo-toggle" onClick={() => setAlpha(value => !value)}>
+                     Alpha: {alpha ? 'on' : 'off'}
+                  </button>
                   <button type="button" className="demo-toggle" onClick={() => setSwatchesTop(value => !value)}>
                      Swatches: {swatchesTop ? 'top' : 'bottom'}
                   </button>
@@ -40,6 +44,7 @@ function App() {
                      className={dark ? 'pqc-dark' : undefined}
                      value={color}
                      onChange={setColor}
+                     alpha={alpha}
                      swatches={SWATCHES}
                      recentColors={recents}
                      swatchesPosition={swatchesTop ? 'top' : 'bottom'}

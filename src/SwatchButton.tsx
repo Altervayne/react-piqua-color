@@ -13,10 +13,12 @@ export function SwatchButton({ color, onSelect }: SwatchButtonProps) {
       <button
          type="button"
          className="pqc-swatch"
-         style={{ background: color }}
          title={color}
          aria-label={color}
          onClick={() => onSelect(color)}
-      />
+      >
+         {/* Fill sits over the checkerboard base so a color with alpha reads as transparent. */}
+         <span className="pqc-swatch-fill" style={{ background: color }} />
+      </button>
    )
 }

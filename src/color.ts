@@ -93,3 +93,34 @@ export function hexToRgb(hex: string): [number, number, number] | null {
 export function rgbToHex(red: number, green: number, blue: number): string {
    return '#' + [red, green, blue].map(component => Math.max(0, Math.min(255, component)).toString(16).padStart(2, '0')).join('')
 }
+
+// Alpha-aware siblings. Alpha is the 0-255 byte, bijective with the hex AA byte,
+// so an imported #rrggbbaa round-trips losslessly (unlike a 0-100 percent store).
+// hexToRgb / rgbToHex above stay 6-digit-only for the no-alpha path.
+
+export function hexToRgba(hex: string): [number, number, number, number] | null {
+   const body = hex.replace('#', '')
+   // Full length: #rrggbb (opaque) or #rrggbbaa.
+   const full = body.match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})?$/i)
+   if (full) {
+      return [
+         parseInt(full[1], 16),
+         parseInt(full[2], 16),
+         parseInt(full[3], 16),
+         full[4] === undefined ? 255 : parseInt(full[4], 16), // #rrggbb parses as fully opaque
+      ]
+   }
+   // Shorthand: #rgb / #rgba, each nibble doubled (f → ff), matching CSS.
+   const short = body.match(/^([0-9a-f])([0-9a-f])([0-9a-f])([0-9a-f])?$/i)
+   if (short) {
+      const dup = (nibble: string) => parseInt(nibble + nibble, 16)
+      return [dup(short[1]), dup(short[2]), dup(short[3]), short[4] === undefined ? 255 : dup(short[4])]
+   }
+   return null
+}
+
+export function rgbaToHex(red: number, green: number, blue: number, alpha: number, includeAlpha = true): string {
+   const base = rgbToHex(red, green, blue)
+   if (!includeAlpha) return base
+   return base + Math.max(0, Math.min(255, Math.round(alpha))).toString(16).padStart(2, '0')
+}

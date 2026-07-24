@@ -56,9 +56,10 @@ caps, dedupes, and persists **nothing**; that is entirely the consumer's job.
 
 | Prop               | Type                        | Required | Description                                                                                 |
 | ------------------ | --------------------------- | -------- | ------------------------------------------------------------------------------------------- |
-| `value`            | `string`                    | yes      | Current color as `#rrggbb`. Fully controlled.                                               |
-| `onChange`         | `(hex: string) => void`     | yes      | Live change — fires continuously during slider drag and hex typing.                         |
-| `onColorCommitted` | `(hex: string) => void`     | no       | Discrete commit — swatch click, a completed 6-digit hex, and slider pointer-up.             |
+| `value`            | `string`                    | yes      | Current color as `#rrggbb` — or `#rrggbbaa` when `alpha` is on. Fully controlled.            |
+| `onChange`         | `(hex: string) => void`     | yes      | Live change — fires continuously during slider drag and hex typing. Same width as `value`.   |
+| `alpha`            | `boolean`                   | no       | Enable the opacity channel: adds an alpha slider and widens hex to 8 digits. Default `false`.|
+| `onColorCommitted` | `(hex: string) => void`     | no       | Discrete commit — swatch click, a completed hex, and slider pointer-up.                      |
 | `swatches`         | `string[]`                  | no       | "Default colors" row. Clickable display only; omit to hide the row.                         |
 | `recentColors`     | `string[]`                  | no       | Recents row. Clickable display only; omit to hide the row.                                  |
 | `swatchesLabel`    | `string`                    | no       | Label above the swatches row. Default `"Default colors"`.                                   |
@@ -66,6 +67,28 @@ caps, dedupes, and persists **nothing**; that is entirely the consumer's job.
 | `swatchesPosition` | `'top' \| 'bottom'`         | no       | Place the swatches + recents block above or below the picker body. Default `'bottom'`.       |
 | `className`        | `string`                    | no       | Appended to the root's class, alongside `pqc-root`.                                          |
 | `style`            | `React.CSSProperties`       | no       | Merged onto the root's inline style — handy for setting `--pqc-*` tokens inline.             |
+
+## Alpha / opacity
+
+Off by default. Pass `alpha` to add an opacity slider below the hue bar and switch
+the whole component to 8-digit hex:
+
+```tsx
+const [color, setColor] = useState('#f97316ff')
+
+<ColorPicker alpha value={color} onChange={setColor} />
+```
+
+With `alpha` on, `value` and every callback are `#rrggbbaa` (a 6-digit `value` is
+read as fully opaque). The slider reads and announces whole **percent** (0–100%),
+while opacity is stored at full 8-bit precision, so an imported `#rrggbbaa`
+round-trips losslessly. With `alpha` off, everything stays `#rrggbb` exactly as
+before. Swatches may carry alpha too; the checkerboard shows through wherever a
+color is translucent.
+
+The hex field accepts 3- and 6-digit input (plus 4- and 8-digit when `alpha` is
+on); shorthand like `f80` expands to `#ff8800` on blur. Output is always full
+length.
 
 ## Theming
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-   hsvToRgb, rgbToHsv, rgbToHsl, hslToRgb, rgbToCmyk, cmykToRgb, hexToRgb, rgbToHex,
+   hsvToRgb, rgbToHsv, rgbToHsl, hslToRgb, rgbToCmyk, cmykToRgb, hexToRgb, rgbToHex, hexToRgba, rgbaToHex,
 } from './color'
 
 // A spread of colors to exercise round-trips: primaries, secondaries, the
@@ -136,5 +136,70 @@ describe('cmykToRgb', () => {
 
    it('round-trips rgb → cmyk → rgb', () => {
       SAMPLES.forEach(rgb => expectClose(cmykToRgb(...rgbToCmyk(...rgb)), rgb, 3))
+   })
+})
+
+describe('hexToRgba', () => {
+   it('parses eight-digit hex with and without the hash', () => {
+      expect(hexToRgba('#ff000080')).toEqual([255, 0, 0, 128])
+      expect(hexToRgba('00ff00ff')).toEqual([0, 255, 0, 255])
+   })
+
+   it('treats six-digit input as fully opaque', () => {
+      expect(hexToRgba('#ff0000')).toEqual([255, 0, 0, 255])
+   })
+
+   it('is case-insensitive', () => {
+      expect(hexToRgba('#AABBCCDD')).toEqual([170, 187, 204, 221])
+   })
+
+   it('handles the alpha byte edges', () => {
+      expect(hexToRgba('#11223300')).toEqual([17, 34, 51, 0])
+      expect(hexToRgba('#112233ff')).toEqual([17, 34, 51, 255])
+   })
+
+   it('expands 3- and 4-digit shorthand by nibble-doubling', () => {
+      expect(hexToRgba('#abc')).toEqual([170, 187, 204, 255])   // #aabbcc, opaque
+      expect(hexToRgba('#abcd')).toEqual([170, 187, 204, 221])  // #aabbccdd
+      expect(hexToRgba('#f008')).toEqual([255, 0, 0, 136])
+   })
+
+   it('rejects malformed input', () => {
+      expect(hexToRgba('#12')).toBeNull()           // 2 digits
+      expect(hexToRgba('#12345')).toBeNull()         // 5 digits
+      expect(hexToRgba('#1234567')).toBeNull()       // 7 digits
+      expect(hexToRgba('#ff00g0aa')).toBeNull()      // non-hex digit
+      expect(hexToRgba('')).toBeNull()
+   })
+})
+
+describe('rgbaToHex', () => {
+   it('formats and zero-pads the alpha byte', () => {
+      expect(rgbaToHex(255, 0, 0, 128)).toBe('#ff000080')
+      expect(rgbaToHex(0, 0, 0, 0)).toBe('#00000000')
+      expect(rgbaToHex(17, 34, 51, 255)).toBe('#112233ff')
+   })
+
+   it('clamps and rounds out-of-range components including alpha', () => {
+      expect(rgbaToHex(-10, 300, 128, 999)).toBe('#00ff80ff')
+      expect(rgbaToHex(0, 0, 0, -5)).toBe('#00000000')
+   })
+
+   it('emits six digits when includeAlpha is false (no-alpha parity)', () => {
+      expect(rgbaToHex(255, 0, 0, 128, false)).toBe('#ff0000')
+      SAMPLES.forEach(([r, g, b]) => expect(rgbaToHex(r, g, b, 255, false)).toBe(rgbToHex(r, g, b)))
+   })
+
+   it('round-trips losslessly with hexToRgba — no tolerance', () => {
+      const alphas = [0, 1, 64, 127, 128, 129, 200, 254, 255]
+      SAMPLES.forEach(([r, g, b], i) => {
+         const a = alphas[i % alphas.length]
+         expect(hexToRgba(rgbaToHex(r, g, b, a))).toEqual([r, g, b, a])
+      })
+   })
+
+   it('preserves the low alpha byte a 0-100 percent model would corrupt', () => {
+      expect(hexToRgba(rgbaToHex(1, 2, 3, 129))).toEqual([1, 2, 3, 129])
+      expect(hexToRgba(rgbaToHex(1, 2, 3, 81))).toEqual([1, 2, 3, 81])
    })
 })

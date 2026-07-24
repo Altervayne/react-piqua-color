@@ -38,6 +38,7 @@
    --pqc-_thumb-size:   var(--pqc-thumb-size,   0.875rem);
    --pqc-_swatch-size:  var(--pqc-swatch-size,  1.25rem);
    --pqc-_focus-width:  var(--pqc-focus-width,  2px);
+   --pqc-_checker:      var(--pqc-checker,      #c9ccd1); /* transparency checkerboard tint */
 
    display: flex;
    flex-direction: column;
@@ -69,6 +70,7 @@
    these for us. Pointer users never see them (:focus-visible). */
 .pqc-sv:focus-visible,
 .pqc-hue:focus-visible,
+.pqc-alpha:focus-visible,
 .pqc-slider:focus-visible {
    outline: var(--pqc-_focus-width) solid var(--pqc-_accent);
    outline-offset: 2px;
@@ -106,6 +108,52 @@
    position: absolute;
    top: 50%;
    /* Slightly larger than the SV/slider thumbs, tracking the thumb-size token. */
+   width: calc(var(--pqc-_thumb-size) + 0.125rem);
+   height: calc(var(--pqc-_thumb-size) + 0.125rem);
+   transform: translate(-50%, -50%);
+   border-radius: 9999px;
+   border: 2px solid var(--pqc-_thumb-ring);
+   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+   pointer-events: none;
+}
+
+/* ============ */
+/*  Alpha bar   */
+/* ============ */
+/* A checkerboard base with a transparent→opaque gradient of the live color on
+   top. The checkerboard also backs the hex preview swatch and any transparent
+   swatch, so opacity is legible everywhere. Opaque fills hide it entirely, so
+   the no-alpha build looks unchanged. */
+.pqc-alpha,
+.pqc-hex-swatch,
+.pqc-swatch {
+   background-color: var(--pqc-_surface);
+   background-image:
+      linear-gradient(45deg, var(--pqc-_checker) 25%, transparent 25%, transparent 75%, var(--pqc-_checker) 75%),
+      linear-gradient(45deg, var(--pqc-_checker) 25%, transparent 25%, transparent 75%, var(--pqc-_checker) 75%);
+   background-size: 8px 8px;
+   background-position: 0 0, 4px 4px;
+}
+
+.pqc-alpha {
+   position: relative;
+   width: 100%;
+   height: var(--pqc-_hue-height);
+   border-radius: 9999px;
+   cursor: pointer;
+   touch-action: none;
+}
+
+.pqc-alpha-fill {
+   position: absolute;
+   inset: 0;
+   border-radius: inherit;
+   pointer-events: none;
+}
+
+.pqc-alpha-thumb {
+   position: absolute;
+   top: 50%;
    width: calc(var(--pqc-_thumb-size) + 0.125rem);
    height: calc(var(--pqc-_thumb-size) + 0.125rem);
    transform: translate(-50%, -50%);
@@ -173,11 +221,25 @@
 }
 
 .pqc-hex-swatch {
+   position: relative;
    width: 1.75rem;
    height: 1.75rem;
    flex-shrink: 0;
    border-radius: var(--pqc-_radius-sm);
    border: 1px solid var(--pqc-_border);
+}
+
+.pqc-hex-swatch-fill {
+   position: absolute;
+   inset: 0;
+   border-radius: inherit;
+}
+
+.pqc-hex-opacity {
+   font-family: var(--pqc-_font-mono);
+   font-size: var(--pqc-_font-size);
+   color: var(--pqc-_muted);
+   flex-shrink: 0;
 }
 
 .pqc-hex-field {
@@ -287,6 +349,7 @@
 }
 
 .pqc-swatch {
+   position: relative;
    width: var(--pqc-_swatch-size);
    height: var(--pqc-_swatch-size);
    padding: 0;
@@ -295,6 +358,12 @@
    border: 1px solid var(--pqc-_border);
    cursor: pointer;
    transition: transform 0.1s ease;
+}
+
+.pqc-swatch-fill {
+   position: absolute;
+   inset: 0;
+   border-radius: inherit;
 }
 
 .pqc-swatch:hover {
@@ -319,4 +388,5 @@
    --pqc-muted: #9aa0a6;
    --pqc-border: #3a3d42;
    --pqc-thumb-ring: #e6e8eb;
+   --pqc-checker: #3f434a;
 }

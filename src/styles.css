@@ -239,6 +239,7 @@
    flex-shrink: 0;
    border-radius: var(--pqc-_radius-sm);
    border: 1px solid var(--pqc-_border);
+   overflow: hidden;
 }
 
 .pqc-hex-swatch-fill {
@@ -402,6 +403,9 @@
    flex-shrink: 0;
    border-radius: var(--pqc-_radius-sm);
    border: 1px solid var(--pqc-_border);
+   /* Crop the checkerboard + fill to the (possibly custom-rounded) shape. The
+      selected ring is an outset box-shadow, so it is not clipped by this. */
+   overflow: hidden;
    cursor: pointer;
    transition: transform 0.1s ease;
 }

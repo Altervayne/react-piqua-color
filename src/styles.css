@@ -262,7 +262,6 @@
 .pqc-hex-swatch-fill {
    position: absolute;
    inset: 0;
-   border-radius: inherit;
    background: var(--pqc-_fill);
 }
 
@@ -430,7 +429,8 @@
 .pqc-swatch-fill {
    position: absolute;
    inset: 0;
-   border-radius: inherit;
+   /* No radius of its own: the parent's overflow:hidden clips it flush to the
+      inner border curve. Its own radius would round tighter and gap at corners. */
    background: var(--pqc-_fill);
 }
 

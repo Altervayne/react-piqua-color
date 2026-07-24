@@ -272,6 +272,7 @@
    display: flex;
    align-items: center;
    flex: 1 1 0%;
+   min-width: 0; /* let the field shrink past the input's intrinsic width so the row's buttons fit */
    gap: 0.25rem;
    padding: 0.375rem 0.625rem;
    background: var(--pqc-_bg);

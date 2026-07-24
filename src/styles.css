@@ -153,6 +153,8 @@
 .pqc-hex-swatch-checker {
    position: absolute;
    inset: 0;
+   width: 100%;
+   height: 100%;
    background-color: var(--pqc-_surface);
    background-image:
       linear-gradient(45deg, var(--pqc-_checker) 25%, transparent 25%, transparent 75%, var(--pqc-_checker) 75%),
@@ -255,13 +257,15 @@
    height: 1.75rem;
    flex-shrink: 0;
    border-radius: var(--pqc-_radius-sm);
-   border: 1px solid var(--pqc-_border);
+   border: 2px solid var(--pqc-_border);
    overflow: hidden;
 }
 
 .pqc-hex-swatch-fill {
    position: absolute;
    inset: 0;
+   width: 100%;
+   height: 100%;
    background: var(--pqc-_fill);
 }
 
@@ -418,7 +422,7 @@
    padding: 0;
    flex-shrink: 0;
    border-radius: var(--pqc-_radius-sm);
-   border: 1px solid var(--pqc-_border);
+   border: 2px solid var(--pqc-_border);
    /* Crop the checkerboard + fill to the (possibly custom-rounded) shape. The
       selected ring is an outset box-shadow, so it is not clipped by this. */
    overflow: hidden;
@@ -429,6 +433,8 @@
 .pqc-swatch-fill {
    position: absolute;
    inset: 0;
+   width: 100%;
+   height: 100%;
    /* No radius of its own: the parent's overflow:hidden clips it flush to the
       inner border curve. Its own radius would round tighter and gap at corners. */
    background: var(--pqc-_fill);
